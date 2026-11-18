@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#071417">
+<title>낙지 · 낙상 감지</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600;700&family=Gowun+Batang:wght@700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{min-height:100%}
+  body{
+    font-family:'IBM Plex Sans KR','Apple SD Gothic Neo',-apple-system,sans-serif;color:#eef1fa;overscroll-behavior:none;
+    user-select:none;-webkit-user-select:none;
+    background:#071417;
+    background-image:
+      radial-gradient(600px 420px at 10% -5%, rgba(92,194,185,.30), transparent 60%),
+      radial-gradient(520px 420px at 110% 18%, rgba(255,143,166,.22), transparent 60%),
+      radial-gradient(520px 520px at 50% 125%, rgba(31,111,107,.45), transparent 60%);
+    background-attachment:fixed;
+  }
+  .app{max-width:520px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top)) 16px calc(90px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:14px}
+
+  /* 헤더 */
+  .top{display:flex;align-items:center;justify-content:space-between}
+  .brand{display:flex;align-items:center;gap:10px}
+  .logo{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;
+        background:linear-gradient(145deg,#fff1f4,#ffd6df);box-shadow:0 6px 20px rgba(255,143,166,.35)}
+  .brand b{font-family:'Gowun Batang',serif;font-size:24px;font-weight:700;display:block;color:#ffb3c3;line-height:1.1}
+  .brand small{font-size:11.5px;color:#8f9bbd}
+  .pill{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:7px 12px;border-radius:99px;
+        background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)}
+  .pill i{width:8px;height:8px;border-radius:50%}
+  .pill.live i{animation:blink 1.2s infinite}
+  @keyframes blink{50%{opacity:.25}}
+
+  /* 원형 게이지 */
+  .hero{position:relative;display:flex;flex-direction:column;align-items:center;padding:18px 0 6px}
+  .gauge{position:relative;width:min(78vw,300px);aspect-ratio:1}
+  .gauge svg{position:absolute;inset:0;width:100%;height:100%}
+  .ring{position:absolute;inset:8%;border-radius:50%;border:2px solid currentColor;opacity:0}
+  .running .ring{animation:ripple 2.4s infinite}
+  .running .ring.r2{animation-delay:.8s}.running .ring.r3{animation-delay:1.6s}
+  @keyframes ripple{0%{transform:scale(.85);opacity:.5}100%{transform:scale(1.25);opacity:0}}
+  .g-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .g-label{font-size:12px;color:#8f9bbd;font-weight:700;letter-spacing:1px}
+  .g-val{font-size:clamp(44px,13vw,56px);font-weight:900;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-2px;transition:color .2s}
+  .g-val small{font-size:20px;letter-spacing:0;margin-left:2px;color:#8f9bbd}
+  .g-state{margin-top:8px;font-size:13px;font-weight:900;padding:5px 14px;border-radius:99px;transition:all .2s}
+
+  .nakji .legs-all{animation:wiggle 2.4s ease-in-out infinite;transform-origin:58px 80px}
+  .nakji .wave{animation:wave 1.4s ease-in-out infinite;transform-origin:92px 66px}
+  .nk-worried .wave{animation-duration:.7s}
+  .nk-alarm .wave{animation-duration:.35s}
+  .nk-alarm .legs-all{animation-duration:.5s}
+  .nakji.bob{animation:bob 3s ease-in-out infinite}
+  .nakji.bob.nk-alarm{animation:shake .4s infinite}
+  @keyframes wiggle{50%{transform:scaleX(1.05) skewX(-3deg)}}
+  @keyframes wave{50%{transform:rotate(-22deg)}}
+  @keyframes bob{50%{transform:translateY(-4px) rotate(-2deg)}}
+  .g-center .nakji{margin-bottom:-2px}
+  .bubble{position:relative;margin-top:12px;max-width:300px;text-align:center;font-size:14px;font-weight:700;line-height:1.45;padding:10px 16px;border-radius:16px;transition:all .2s;word-break:keep-all}
+  .bubble::before{content:'';position:absolute;top:-7px;left:50%;width:14px;height:14px;margin-left:-7px;transform:rotate(45deg);background:inherit;border-left:inherit;border-top:inherit}
+
+  /* 시작 버튼 */
+  .start{position:relative;width:100%;border:none;border-radius:18px;padding:18px;font-size:18px;font-weight:900;font-family:inherit;cursor:pointer;color:#fff;
+         background:linear-gradient(135deg,#1f6f6b 0%,#2a9a90 55%,#ff8fa6 130%);box-shadow:0 10px 30px rgba(42,154,144,.45);overflow:hidden}
+  .start::after{content:'';position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);transform:skewX(-20deg);animation:shine 2.6s infinite}
+  @keyframes shine{to{left:130%}}
+  .start.on{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);box-shadow:none;font-size:14.5px;padding:13px;color:#9fe3db}
+  .start.on::after{display:none}
+
+  .msg{font-size:12.5px;line-height:1.5;padding:10px 14px;border-radius:14px;background:rgba(255,69,58,.12);border:1px solid rgba(255,69,58,.35);color:#ffb3ad}
+
+  /* 카드 */
+  .glass{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:14px 16px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+  .sec-title{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;color:#d3e6e4}
+  .sec-title span{font-size:11.5px;color:#8f9bbd;font-weight:500}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .stat{padding:12px 10px;text-align:center}
+  .stat .ic{font-size:20px}
+  .stat .v{font-size:19px;font-weight:900;margin-top:4px;font-variant-numeric:tabular-nums}
+  .stat .k{font-size:11px;color:#8f9bbd;margin-top:2px}
+
+  canvas{width:100%;height:180px;display:block;margin-top:10px;border-radius:14px;background:rgba(0,0,0,.35)}
+  .legend{display:flex;gap:12px;font-size:11px;color:#8f9bbd;margin-top:8px;flex-wrap:wrap}
+  .legend i{display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:4px;vertical-align:middle}
+
+  .chips{display:flex;gap:8px;margin-top:12px}
+  .chip{flex:1;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#c9d2ec;border-radius:12px;padding:10px 4px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
+  .chip b{display:block;font-size:11px;color:#8f9bbd;font-weight:500;margin-top:2px}
+  .chip.sel{background:linear-gradient(135deg,rgba(42,154,144,.45),rgba(255,143,166,.3));border-color:#5cc2b9;color:#fff}
+  .chip.sel b{color:#dfe4ff}
+  .slider{width:100%;margin-top:12px;accent-color:#5cc2b9}
+
+  .hist li{list-style:none;display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid rgba(255,255,255,.06);font-size:13px}
+  .hist li:first-child{border-top:none}
+  .hist .badge{font-size:11px;font-weight:900;padding:3px 8px;border-radius:7px}
+  .hist time{margin-left:auto;color:#8f9bbd;font-size:12px;font-variant-numeric:tabular-nums}
+  .empty{font-size:12.5px;color:#6f7a99;padding:8px 0 2px}
+  .foot{font-size:11px;color:#5e6886;line-height:1.6;text-align:center;padding:0 8px}
+
+  /* 경고 화면 */
+  .alarm{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+         padding:calc(24px + env(safe-area-inset-top)) 22px calc(24px + env(safe-area-inset-bottom));color:#fff;overflow:hidden;animation:flash .7s infinite}
+  @keyframes flash{0%,100%{background:#b0001c}50%{background:#ff1a3c}}
+  .pulse{position:absolute;left:50%;top:32%;width:180px;height:180px;margin:-90px 0 0 -90px;border-radius:50%;border:3px solid rgba(255,255,255,.6);animation:boom 1.6s infinite}
+  .pulse.p2{animation-delay:.53s}.pulse.p3{animation-delay:1.06s}
+  @keyframes boom{0%{transform:scale(.5);opacity:.9}100%{transform:scale(3);opacity:0}}
+  .a-icon{position:relative;width:150px;height:150px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 10px rgba(255,255,255,.2),0 20px 40px rgba(0,0,0,.3);animation:pop .7s infinite}
+  @keyframes pop{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+  .alarm h2{position:relative;font-size:clamp(34px,11vw,48px);font-weight:900;margin-top:22px;letter-spacing:-1px;text-shadow:0 4px 16px rgba(0,0,0,.25)}
+  .alarm .lead{position:relative;font-size:19px;font-weight:700;margin-top:4px}
+  .a-card{position:relative;width:100%;max-width:360px;margin-top:20px;background:rgba(0,0,0,.28);border-radius:20px;padding:16px;text-align:left}
+  .a-metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .a-metrics div{background:rgba(255,255,255,.12);border-radius:14px;padding:10px 12px}
+  .a-metrics small{font-size:11.5px;opacity:.85}
+  .a-metrics b{display:block;font-size:24px;font-weight:900;margin-top:2px}
+  .steps{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+  .step{display:flex;align-items:center;gap:10px;font-size:14px;opacity:.45;transition:opacity .3s}
+  .step.done,.step.now{opacity:1}
+  .step .s-ic{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;background:rgba(255,255,255,.2);flex:none}
+  .step.done .s-ic{background:#fff;color:#c4001f}
+  .step.now .s-ic{border:2px solid #fff;border-top-color:transparent;background:none;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .cancel{position:relative;margin-top:22px;border:2px solid rgba(255,255,255,.85);background:rgba(0,0,0,.25);color:#fff;border-radius:18px;padding:15px 36px;font-size:17px;font-weight:900;font-family:inherit;cursor:pointer}
+
+  /* 3단계 판정 */
+  .stages{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+  .stg{text-align:center;padding:10px 4px;border-radius:14px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);font-size:14px;font-weight:700;color:#8f9bbd;transition:all .25s}
+  .stg b{display:block;font-size:18px}
+  .stg small{display:block;font-size:10.5px;font-weight:500;margin-top:3px;line-height:1.35;word-break:keep-all}
+  .stg.lit{background:rgba(255,45,85,.22);border-color:#ff2d55;color:#fff}
+  .stg.wait{background:rgba(255,176,32,.18);border-color:#ffb020;color:#ffd58a}
+  .stg.off{background:rgba(92,194,185,.16);border-color:#5cc2b9;color:#bff0ea}
+  .sims{display:flex;gap:8px;margin-top:12px}
+  .sim{flex:1;border:none;border-radius:14px;padding:12px 6px;font-family:inherit;font-size:14px;font-weight:900;color:#fff;cursor:pointer;background:linear-gradient(135deg,#2a9a90,#1f6f6b)}
+  .sim.ghost{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:#c9d2ec}
+  .sim:disabled{opacity:.45}
+  .simnote{font-size:11px;color:#8f9bbd;margin-top:8px;line-height:1.5}
+  /* 괜찮으세요? 확인 화면 */
+  .okcheck{position:fixed;inset:0;z-index:48;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+           padding:calc(24px + env(safe-area-inset-top)) 22px calc(24px + env(safe-area-inset-bottom));color:#fff;background:#3a2a05;background:radial-gradient(circle at 50% 30%,#8a5a00,#2a1c02)}
+  .okcheck h2{font-size:clamp(36px,12vw,52px);font-weight:900;margin-top:20px}
+  .okcheck .lead{font-size:19px;font-weight:700;margin-top:4px}
+  .okcount{margin-top:14px;font-size:17px;font-weight:700}
+  .okcount b{font-size:44px;font-weight:900;margin-right:4px;color:#ffd166;font-variant-numeric:tabular-nums}
+  .okbtns{display:flex;flex-direction:column;gap:12px;width:100%;max-width:360px;margin-top:22px}
+  .okbtns button{border:none;border-radius:20px;padding:20px;font-family:inherit;font-size:22px;font-weight:900;cursor:pointer}
+  .okyes{background:#fff;color:#1f6f6b}
+  .okhelp{background:#ff2d55;color:#fff}
+  .a-metrics div:nth-child(n+3){grid-column:auto}
+
+  /* 숨김 테스트 버튼 */
+  .secret{position:fixed;right:0;bottom:0;width:60px;height:60px;z-index:40;background:transparent;border:none;opacity:0}
+  .secret-mark{position:fixed;right:8px;bottom:calc(8px + env(safe-area-inset-bottom));width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.12);z-index:39;pointer-events:none}
+</style>
+</head>
+<body>
+<a href="./" style="position:fixed;left:max(12px,env(safe-area-inset-left));bottom:calc(14px + env(safe-area-inset-bottom));z-index:40;background:#1f6f6b;color:#fff;font:800 15px/1 sans-serif;padding:12px 16px;border-radius:999px;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.35)">← 낙지로</a>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useRef } = React;
+
+const G = 9.80665;
+const LEN = 200;
+const PRESETS = [
+  { k: '민감', v: 2.0, d: '작은 충격도 감지' },
+  { k: '보통', v: 2.5, d: '기본값' },
+  { k: '둔감', v: 3.2, d: '오작동 줄이기' },
+];
+/* ---------- 3단계 낙상 판정 기준 ----------
+   ① 낙하: 몸이 붕 뜨면 가속도 합이 1G보다 크게 줄어듦 (0.6G 미만이 60ms 이상)
+   ② 충격: 낙하 뒤 1초 안에 감지 기준 이상 충격
+   ③ 넘어진 뒤: 충격 2.5초 뒤까지 움직임이 거의 없고(흔들림 표준편차 0.15G 미만),
+      낙하가 있었거나 몸(휴대폰)의 방향이 45° 이상 바뀌었으면 '넘어짐'으로 판정
+   → 휴대폰을 떨어뜨리는 경우는 여전히 구별하기 어려워, 판정 뒤 "괜찮으세요?" 확인을 거침 */
+const FF_G = 0.6, FF_MS = 60, FF_TO_IMPACT_MS = 1000, STILL_WAIT_MS = 2500, STILL_STD = 0.15, TILT_DEG = 45;
+const MODES = [
+  { k: 'smart', t: '정밀 (3단계)', d: '낙하·충격·움직임 확인' },
+  { k: 'simple', t: '단순 (충격만)', d: '예전 방식' },
+];
+const WAITS = [15, 30];
+function speak(t) {
+  try {
+    if (!window.speechSynthesis) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(t); u.lang = 'ko-KR'; u.rate = 0.9; u.volume = 1;
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
+function angleDeg(a, b) {
+  const la = Math.hypot(...a), lb = Math.hypot(...b);
+  if (!la || !lb) return 0;
+  const c = Math.max(-1, Math.min(1, (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]) / (la * lb)));
+  return Math.acos(c) * 180 / Math.PI;
+}
+
+/* ---------- 경고음 ---------- */
+let ctx = null, sirenTimer = null;
+function unlockAudio() {
+  try { window.speechSynthesis && speechSynthesis.speak(new SpeechSynthesisUtterance(' ')); } catch (e) {}
+  try {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') ctx.resume();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    g.gain.value = 0; o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.01);
+  } catch (e) {}
+}
+function startSiren() {
+  stopSiren();
+  if (!ctx) return;
+  let hi = false;
+  const tone = () => {
+    try {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sawtooth'; o.frequency.value = hi ? 1050 : 780; hi = !hi;
+      g.gain.setValueAtTime(0.18, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.42);
+      o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.45);
+    } catch (e) {}
+  };
+  tone(); sirenTimer = setInterval(tone, 450);
+}
+function stopSiren() { if (sirenTimer) clearInterval(sirenTimer); sirenTimer = null; }
+function beep() {
+  if (!ctx) return;
+  try {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine'; o.frequency.value = 880;
+    g.gain.setValueAtTime(0.12, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.18);
+    o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.2);
+  } catch (e) {}
+}
+
+/* ---------- 진동 (안드로이드만 지원) ---------- */
+const canVibrate = typeof navigator !== 'undefined' && 'vibrate' in navigator;
+let vibTimer = null;
+function startVibrate() {
+  stopVibrate();
+  if (!canVibrate) return;
+  const v = () => { try { navigator.vibrate([600, 200, 600, 200]); } catch (e) {} };
+  v(); vibTimer = setInterval(v, 1600);
+}
+function stopVibrate() { if (vibTimer) clearInterval(vibTimer); vibTimer = null; try { canVibrate && navigator.vibrate(0); } catch (e) {} }
+
+function nowStr() { return new Date().toLocaleTimeString('ko-KR', { hour12: false }); }
+
+/* ---------- 낙지 캐릭터 (Teaching Demo 챗봇 '낙지'와 같은 디자인) ---------- */
+function Nakji({ mood = 'calm', size = 64, bob = false }) {
+  const alarm = mood === 'alarm', worried = mood === 'worried';
+  return (
+    <svg className={'nakji nk-' + mood + (bob ? ' bob' : '')} width={size} height={size} viewBox="0 0 120 120" role="img" aria-label="간호사 모자를 쓴 낙지">
+      <g className="legs-all">
+        <g fill="none" stroke="#f47c93" strokeWidth="11" strokeLinecap="round">
+          <path d="M33 78 Q20 96 30 108" /><path d="M45 84 Q40 102 49 110" /><path d="M60 86 Q61 104 68 110" />
+          <path d="M75 84 Q84 100 80 109" /><path d="M24 70 Q8 80 12 94" />
+        </g>
+        <g fill="#ffc7d2">
+          <circle cx="27" cy="96" r="2.4" /><circle cx="43" cy="100" r="2.4" /><circle cx="62" cy="102" r="2.4" />
+          <circle cx="80" cy="99" r="2.4" /><circle cx="12" cy="86" r="2.2" />
+        </g>
+      </g>
+      <g className="wave">
+        <path d="M92 66 Q112 54 107 36" fill="none" stroke="#f47c93" strokeWidth="11" strokeLinecap="round" />
+        <circle cx="105" cy="46" r="2.2" fill="#ffc7d2" /><circle cx="101" cy="56" r="2.2" fill="#ffc7d2" />
+      </g>
+      <ellipse cx="58" cy="54" rx="38" ry="35" fill="#ff8fa6" />
+      <ellipse cx="46" cy="36" rx="10" ry="6" fill="#ffd0da" opacity=".8" />
+      <path d="M36 26 Q58 8 80 26 L76 34 Q58 26 40 34 Z" fill="#ffffff" stroke="#c9566c" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M58 19 c-2.4-3.2-7-1.4-5.8 2.2 c.9 2.6 5.8 5.6 5.8 5.6 s4.9-3 5.8-5.6 c1.2-3.6-3.4-5.4-5.8-2.2z" fill="#e0455f" />
+      <ellipse cx="45" cy="56" rx={alarm ? 9 : 7.5} ry={alarm ? 10 : 8.5} fill="#ffffff" />
+      <ellipse cx="71" cy="56" rx={alarm ? 9 : 7.5} ry={alarm ? 10 : 8.5} fill="#ffffff" />
+      <circle cx="46" cy="58" r={alarm ? 3.2 : worried ? 3.8 : 4.6} fill="#2b2230" />
+      <circle cx="70" cy="58" r={alarm ? 3.2 : worried ? 3.8 : 4.6} fill="#2b2230" />
+      <circle cx="47.6" cy="56" r="1.6" fill="#ffffff" /><circle cx="71.6" cy="56" r="1.6" fill="#ffffff" />
+      {(worried || alarm) && <g stroke="#7a2e3b" strokeWidth="2.4" strokeLinecap="round">
+        <path d="M38 44 L51 47" /><path d="M78 44 L65 47" /></g>}
+      <ellipse cx="34" cy="68" rx="6" ry="3.6" fill="#ff5f7e" opacity=".45" />
+      <ellipse cx="82" cy="68" rx="6" ry="3.6" fill="#ff5f7e" opacity=".45" />
+      {alarm ? <ellipse cx="58" cy="74" rx="6" ry="5.5" fill="#7a2e3b" />
+        : worried ? <path d="M51 73 Q54.5 70 58 73 Q61.5 76 65 73" fill="none" stroke="#7a2e3b" strokeWidth="2.6" strokeLinecap="round" />
+        : <path d="M51 70 Q58 77 65 70" fill="none" stroke="#7a2e3b" strokeWidth="2.6" strokeLinecap="round" />}
+      {alarm && <path d="M92 32 q-5 8 0 11 q5 -3 0 -11z" fill="#8fd3ff" />}
+    </svg>
+  );
+}
+
+/* ---------- 원형 게이지 ---------- */
+function Gauge({ value, th, color, running, mood }) {
+  const R = 120, C = 150, start = 135, sweep = 270, max = 4;
+  const pt = (deg, r = R) => { const a = (deg - 90) * Math.PI / 180; return [C + r * Math.cos(a), C + r * Math.sin(a)]; };
+  const arc = (from, to, r = R) => {
+    const [x1, y1] = pt(from, r), [x2, y2] = pt(to, r);
+    return `M ${x1} ${y1} A ${r} ${r} 0 ${to - from > 180 ? 1 : 0} 1 ${x2} ${y2}`;
+  };
+  const frac = v => Math.max(0, Math.min(1, v / max));
+  const end = start + sweep * Math.max(0.005, frac(value));
+  const [tx1, ty1] = pt(start + sweep * frac(th), R - 18), [tx2, ty2] = pt(start + sweep * frac(th), R + 16);
+  const ticks = [0, 1, 2, 3, 4];
+  return (
+    <div className={'gauge' + (running ? ' running' : '')} style={{ color }}>
+      <div className="ring" /><div className="ring r2" /><div className="ring r3" />
+      <svg viewBox="0 0 300 300">
+        <defs>
+          <linearGradient id="gg" x1="0" y1="1" x2="1" y2="0">
+            <stop offset="0" stopColor="#5cc2b9" /><stop offset=".55" stopColor="#ffb020" /><stop offset="1" stopColor="#ff2d55" />
+          </linearGradient>
+          <filter id="glow"><feGaussianBlur stdDeviation="4" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
+        </defs>
+        <circle cx={C} cy={C} r={R - 26} fill="rgba(255,255,255,.03)" stroke="rgba(255,255,255,.06)" />
+        <path d={arc(start, start + sweep)} stroke="rgba(255,255,255,.08)" strokeWidth="18" fill="none" strokeLinecap="round" />
+        <path d={arc(start, end)} stroke="url(#gg)" strokeWidth="18" fill="none" strokeLinecap="round" filter="url(#glow)" />
+        {ticks.map(t => { const [x, y] = pt(start + sweep * t / max, R + 24); return <text key={t} x={x} y={y + 4} fill="#6f7a99" fontSize="11" textAnchor="middle">{t}G</text>; })}
+        <line x1={tx1} y1={ty1} x2={tx2} y2={ty2} stroke="#fff" strokeWidth="3" strokeLinecap="round" />
+      </svg>
+      <div className="g-center">
+        <Nakji mood={mood} size={74} bob />
+        <div className="g-label">실시간 충격</div>
+        <div className="g-val" style={{ color }}>{value.toFixed(2)}<small>G</small></div>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [state, setState] = useState('idle');
+  const [alarm, setAlarm] = useState(null);
+  const [step, setStep] = useState(0);
+  const [mag, setMag] = useState(1);
+  const [peak, setPeak] = useState(1);
+  const [th, setTh] = useState(2.5);
+  const [hz, setHz] = useState(0);
+  const [hist, setHist] = useState([]);
+  const buf = useRef({ x: Array(LEN).fill(0), y: Array(LEN).fill(0), z: Array(LEN).fill(0), m: Array(LEN).fill(1) });
+  const canvasRef = useRef(null);
+  const thRef = useRef(th); thRef.current = th;
+  const alarmRef = useRef(null); alarmRef.current = alarm;
+  const cooldown = useRef(0);
+  const count = useRef(0);
+  const gotData = useRef(false);
+  const freeFall = useRef(0);
+  /* 정밀 판정용 */
+  const [mode, setMode] = useState('smart');
+  const modeRef = useRef(mode); modeRef.current = mode;
+  const [wait, setWait] = useState(30);
+  const [stage, setStage] = useState({ ff: false, impact: false, still: '' });   // 화면의 ①②③ 불빛
+  const [check, setCheck] = useState(null);      // "괜찮으세요?" 확인 화면 {left, info}
+  const checkRef = useRef(null); checkRef.current = check;
+  const [hiddenWarn, setHiddenWarn] = useState(false);
+  const [simOn, setSimOn] = useState(false);
+  const det = useRef({ phase: 'idle', ffStart: 0, ffSeen: 0, impactT: 0, impactG: 0, hadFF: false, pre: [0, 0, 1], win: [] });
+  const grav = useRef([0, 0, 1]);
+
+  const isiOS = typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function';
+
+  function log(entry) { setHist(h => [{ time: nowStr(), ...entry }, ...h].slice(0, 8)); }
+  function trigger(g, source, info = {}) {
+    if (alarmRef.current) return;
+    const fall = info.hadFF != null ? info.hadFF : Date.now() - freeFall.current < 1200;
+    const a = { g, time: nowStr(), source, fall, ...info };
+    setCheck(null);
+    setAlarm(a); setStep(0);
+    log({ ...a, result: 'alert' });
+    startSiren(); startVibrate();
+    setTimeout(() => speak('낙상이 감지됐어요. 보호자에게 알리고 있어요.'), 300);
+  }
+  function cancelAlarm() {
+    setAlarm(null); stopSiren(); stopVibrate();
+    cooldown.current = Date.now() + 2500;
+    setPeak(1); setStage({ ff: false, impact: false, still: '' });
+    setHist(h => h.length ? [{ ...h[0], result: 'cancel' }, ...h.slice(1)] : h);
+  }
+  /* "괜찮으세요?" 확인 → 시간 안에 답이 없으면 알림 */
+  function askOk(info) {
+    if (alarmRef.current || checkRef.current) return;
+    setCheck({ left: wait, info });
+    startVibrate();
+    speak('넘어지신 것 같아요. 괜찮으세요? 괜찮으시면 괜찮아요를 눌러 주세요.');
+  }
+  function answerOk() {
+    const c = checkRef.current; if (!c) return;
+    setCheck(null); stopVibrate();
+    cooldown.current = Date.now() + 2500;
+    setStage({ ff: false, impact: false, still: '' });
+    log({ g: c.info.g, source: c.info.source, fall: c.info.hadFF, tilt: c.info.tilt, result: 'ok' });
+    speak('다행이에요. 그래도 간호사에게 꼭 알려 주세요.');
+  }
+  function answerHelp() {
+    const c = checkRef.current; if (!c) return;
+    stopVibrate(); trigger(c.info.g, c.info.source, c.info);
+  }
+  useEffect(() => {
+    if (!check) return;
+    if (check.left <= 0) { stopVibrate(); trigger(check.info.g, check.info.source, check.info); return; }
+    const id = setTimeout(() => { beep(); setCheck(c => c ? { ...c, left: c.left - 1 } : c); }, 1000);
+    return () => clearTimeout(id);
+  }, [check]);
+
+  /* 한 번의 센서 값(G 단위, 시각 ms)을 3단계로 판정 */
+  function process(x, y, z, t, source) {
+    const m = Math.sqrt(x * x + y * y + z * z);
+    const b = buf.current;
+    b.x.push(x); b.y.push(y); b.z.push(z); b.m.push(m);
+    if (b.x.length > LEN) { b.x.shift(); b.y.shift(); b.z.shift(); b.m.shift(); }
+    const d = det.current;
+    // 단순 모드: 예전처럼 충격만 보면 바로 알림
+    if (modeRef.current === 'simple') {
+      if (m < 0.45) freeFall.current = Date.now();
+      if (m >= thRef.current && Date.now() > cooldown.current) trigger(m, source);
+      return;
+    }
+    if (alarmRef.current || checkRef.current) return;
+    if (d.phase === 'still') {
+      if (t - d.impactT < 300) { d.impactG = Math.max(d.impactG, m); return; }   // 충격 직후 출렁임은 건너뜀
+      d.win.push([x, y, z, m]);
+      if (t - d.impactT >= STILL_WAIT_MS) {
+        const ms = d.win.map(w => w[3]);
+        const mean = ms.reduce((s, v) => s + v, 0) / (ms.length || 1);
+        const std = Math.sqrt(ms.reduce((s, v) => s + (v - mean) ** 2, 0) / (ms.length || 1));
+        const avg = [0, 1, 2].map(k => d.win.reduce((s, w) => s + w[k], 0) / (d.win.length || 1));
+        const tilt = Math.round(angleDeg(d.pre, avg));
+        const still = std < STILL_STD;
+        const ok = still && (d.hadFF || tilt >= TILT_DEG);
+        const info = { g: d.impactG, source, hadFF: d.hadFF, tilt, still };
+        d.phase = 'idle'; d.win = [];
+        if (ok) { setStage({ ff: d.hadFF, impact: true, still: 'yes' }); askOk(info); }
+        else {
+          setStage({ ff: d.hadFF, impact: true, still: 'no' });
+          log({ ...info, result: 'filtered' });           // 충격은 있었지만 넘어짐이 아니라고 판정
+          setTimeout(() => setStage({ ff: false, impact: false, still: '' }), 2500);
+        }
+        cooldown.current = Date.now() + 1500;
+      }
+      return;
+    }
+    // 평소 자세(중력 방향) 기억: 잔잔할 때만 천천히 갱신
+    if (Math.abs(m - 1) < 0.15) grav.current = grav.current.map((g, k) => g * 0.92 + [x, y, z][k] * 0.08);
+    // ① 낙하
+    if (m < FF_G) {
+      if (!d.ffStart) d.ffStart = t;
+      else if (t - d.ffStart >= FF_MS) { d.ffSeen = t; freeFall.current = Date.now(); setStage(s => s.ff ? s : { ff: true, impact: false, still: '' }); }
+    } else d.ffStart = 0;
+    // ② 충격
+    if (m >= thRef.current && Date.now() > cooldown.current) {
+      d.phase = 'still'; d.impactT = t; d.impactG = m; d.win = [];
+      d.hadFF = d.ffSeen > 0 && t - d.ffSeen < FF_TO_IMPACT_MS;
+      d.pre = grav.current.slice();
+      setStage({ ff: d.hadFF, impact: true, still: 'checking' });
+    }
+    // 낙하 표시는 충격 없이 1.5초 지나면 끔
+    if (d.ffSeen && t - d.ffSeen > 1500 && d.phase === 'idle') { d.ffSeen = 0; setStage(s => (s.ff && !s.impact) ? { ff: false, impact: false, still: '' } : s); }
+  }
+
+  /* 시연용: 실제 판정 과정에 '넘어지는 모양'의 가짜 센서 값을 흘려 보냄 (휴대폰을 던지지 않아도 됨) */
+  function simulate(kind) {
+    if (simOn) return;
+    unlockAudio(); setSimOn(true);
+    const n = (a) => (Math.random() - 0.5) * a;
+    const seq = [];
+    let t = 0; const dt = 20;
+    for (; t < 600; t += dt) seq.push([n(.04), 1 + n(.04), n(.04)]);                       // 서 있음 (휴대폰 세로)
+    if (kind === 'fall') {
+      for (let i = 0; i < 15; i++) seq.push([n(.1), .18 + n(.08), n(.1)]);                   // ① 붕 뜸 (0.3초)
+      seq.push([2.6, 1.6, 1.3], [1.9, .9, .8], [1.4, .4, .5]);                              // ② 쿵
+      for (let i = 0; i < 160; i++) seq.push([1 + n(.03), n(.03), n(.03)]);                // ③ 옆으로 누워 움직임 없음
+    } else {                                                                                  // 털썩 앉기: 충격 뒤 계속 움직임
+      seq.push([.4, 2.8, .7], [.2, 1.9, .4]);
+      for (let i = 0; i < 160; i++) seq.push([n(.5), 1 + n(.6), n(.5)]);
+    }
+    simRef.current = true; let i = 0; const t0 = performance.now();
+    const id = setInterval(() => {
+      if (i >= seq.length) { clearInterval(id); simRef.current = false; setSimOn(false); return; }
+      const [x, y, z] = seq[i]; process(x, y, z, t0 + i * dt, 'test'); i++;
+    }, dt);
+  }
+
+  // 신고 진행 단계 연출
+  useEffect(() => {
+    if (!alarm) return;
+    if (step >= 3) return;
+    const id = setTimeout(() => setStep(s => s + 1), step === 0 ? 900 : 1400);
+    return () => clearTimeout(id);
+  }, [alarm, step]);
+
+  function onMotion(e) {
+    const a = e.accelerationIncludingGravity;
+    if (!a || a.x == null) return;
+    gotData.current = true;
+    count.current++;
+    if (simRef.current) return;                     // 시연 흉내 중에는 실제 센서 값을 잠시 쉬게 함
+    process(a.x / G, a.y / G, a.z / G, performance.now(), 'sensor');
+  }
+  const simRef = useRef(false); simRef.current = simOn;
+  const motionRef = useRef(null); motionRef.current = onMotion;
+  const handler = useRef(e => motionRef.current && motionRef.current(e)).current;
+
+  function start() {
+    unlockAudio();
+    if (typeof DeviceMotionEvent === 'undefined') { setState('unsupported'); return; }
+    if (isiOS) {
+      DeviceMotionEvent.requestPermission()
+        .then(r => { if (r === 'granted') listen(); else setState('denied'); })
+        .catch(() => setState('denied'));
+    } else {
+      listen();
+    }
+    try { navigator.wakeLock && navigator.wakeLock.request('screen').catch(() => {}); } catch (e) {}
+  }
+  function listen() {
+    window.removeEventListener('devicemotion', handler);
+    window.addEventListener('devicemotion', handler);
+    gotData.current = false;
+    setState('waiting');
+    setTimeout(() => setState(gotData.current ? 'running' : 'nosensor'), 2000);
+  }
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setHz(count.current); count.current = 0;
+      if (gotData.current) setState(s => (s === 'waiting' || s === 'nosensor') ? 'running' : s);
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  /* 그래프 */
+  useEffect(() => {
+    let raf;
+    const draw = () => {
+      const c = canvasRef.current;
+      if (c) {
+        const dpr = window.devicePixelRatio || 1;
+        const W = c.clientWidth, H = c.clientHeight;
+        if (c.width !== Math.round(W * dpr)) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); }
+        const g = c.getContext('2d');
+        g.setTransform(dpr, 0, 0, dpr, 0, 0);
+        g.clearRect(0, 0, W, H);
+        const maxG = 4, mid = H / 2;
+        const yOf = v => mid - Math.max(-maxG, Math.min(maxG, v)) / maxG * (H / 2 - 8);
+        g.font = '10px sans-serif';
+        [-4, -2, 0, 2, 4].forEach(v => {
+          const yy = yOf(v);
+          g.strokeStyle = 'rgba(255,255,255,.06)'; g.lineWidth = 1; g.beginPath(); g.moveTo(0, yy); g.lineTo(W, yy); g.stroke();
+          g.fillStyle = '#5e6886'; g.fillText(v + 'G', 6, yy - 3);
+        });
+        const ty = yOf(thRef.current);
+        g.setLineDash([6, 5]); g.strokeStyle = 'rgba(255,176,32,.9)'; g.beginPath(); g.moveTo(0, ty); g.lineTo(W, ty); g.stroke(); g.setLineDash([]);
+        const b = buf.current;
+        const path = arr => { g.beginPath(); arr.forEach((v, i) => { const xx = i / (LEN - 1) * W, yy = yOf(v); i ? g.lineTo(xx, yy) : g.moveTo(xx, yy); }); };
+        [[b.x, '#ff5a7a'], [b.y, '#3ee08f'], [b.z, '#4da3ff']].forEach(([arr, col]) => { path(arr); g.strokeStyle = col; g.lineWidth = 1.3; g.globalAlpha = .75; g.stroke(); });
+        g.globalAlpha = 1;
+        // 합성값: 채움 + 발광 선
+        path(b.m); g.lineTo(W, H); g.lineTo(0, H); g.closePath();
+        const grad = g.createLinearGradient(0, 0, 0, H); grad.addColorStop(0, 'rgba(255,143,166,.32)'); grad.addColorStop(1, 'rgba(255,143,166,0)');
+        g.fillStyle = grad; g.fill();
+        path(b.m); g.shadowColor = '#ff8fa6'; g.shadowBlur = 10; g.strokeStyle = '#ffffff'; g.lineWidth = 2.2; g.stroke(); g.shadowBlur = 0;
+        const last = b.m[b.m.length - 1];
+        setMag(last);
+        setPeak(p => Math.max(p, last));
+      }
+      raf = requestAnimationFrame(draw);
+    };
+    raf = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  useEffect(() => () => { window.removeEventListener('devicemotion', handler); stopSiren(); stopVibrate(); }, []);
+  /* 화면이 꺼지거나 다른 앱으로 가면 브라우저가 센서를 멈춤 → 돌아왔을 때 알려 줌 */
+  useEffect(() => {
+    const f = () => { if (document.hidden && gotData.current) setHiddenWarn(true); };
+    document.addEventListener('visibilitychange', f);
+    return () => document.removeEventListener('visibilitychange', f);
+  }, []);
+
+  const on = state === 'running' || state === 'waiting';
+  const level = mag >= th ? 2 : mag >= th * 0.7 ? 1 : 0;
+  const color = ['#5cc2b9', '#ffb020', '#ff2d55'][level];
+  const levelText = !on ? '대기' : ['안전', '주의', '위험'][level];
+  const talk = !on ? '센서를 켜 주시면 낙지가 지켜볼게요!'
+    : ['낙지가 지켜보고 있어요. 안심하세요 🐙', '앗, 흔들림이 커요! 천천히 움직이세요', '쿵! 큰 충격이 느껴졌어요'][level];
+  const pill = {
+    idle: ['#8f9bbd', '대기 중', false],
+    waiting: ['#ffb020', '연결 중', true],
+    running: ['#5cc2b9', '감지 중', true],
+    denied: ['#ff5a5a', '권한 거부', false],
+    nosensor: ['#ff5a5a', '신호 없음', false],
+    unsupported: ['#ff5a5a', '미지원', false],
+  }[state];
+  const errMsg = {
+    denied: '권한이 거부되었습니다. 브라우저 앱을 완전히 닫았다가 다시 열고 [센서 작동 시작]을 눌러 “허용”을 선택하세요.',
+    nosensor: '센서 신호가 없습니다. https 주소로 열었는지 확인하거나, 오른쪽 아래 모서리의 테스트 버튼을 사용하세요.',
+    unsupported: '이 브라우저는 가속도 센서를 지원하지 않습니다.',
+  }[state];
+
+  const steps = ['낙상 이벤트 기록', '현재 위치 확인', '보호자에게 알림 전송 중'];
+  const BADGE = {
+    alert: ['신고', { background: 'rgba(255,45,85,.2)', color: '#ff7a92' }],
+    cancel: ['오작동 취소', { background: 'rgba(143,155,189,.18)', color: '#c9d2ec' }],
+    ok: ['괜찮다고 답함', { background: 'rgba(92,194,185,.18)', color: '#9fe3db' }],
+    filtered: ['넘어짐 아님', { background: 'rgba(255,176,32,.16)', color: '#ffc966' }],
+  };
+
+  return (
+    <div className="app">
+      <div className="top">
+        <div className="brand">
+          <div className="logo"><Nakji size={46} /></div>
+          <div><b>낙지</b><small>낙상 지킴이 · AI 낙상 감지</small></div>
+        </div>
+        <div className={'pill' + (pill[2] ? ' live' : '')} style={{ color: pill[0] }}><i style={{ background: pill[0] }} />{pill[1]}</div>
+      </div>
+
+      <div className="hero">
+        <Gauge value={on ? mag : 0} th={th} color={on ? color : '#5e6886'} running={state === 'running'} mood={on ? ['calm', 'worried', 'alarm'][level] : 'calm'} />
+        <div className="bubble" style={{ color: on ? color : '#d3e6e4', background: (on ? color : '#8f9bbd') + '22', border: `1px solid ${on ? color : '#8f9bbd'}55` }}>
+          <b>{levelText}</b> · {talk}
+        </div>
+      </div>
+
+      <button className={'start' + (on ? ' on' : '')} onClick={start}>
+        {on ? '✓ 센서 작동 중 · 다시 누르면 재연결' : '▶  센서 작동 시작'}
+      </button>
+      {errMsg && <div className="msg">{errMsg}</div>}
+      {hiddenWarn && <div className="msg" onClick={() => setHiddenWarn(false)}>화면이 꺼졌거나 다른 앱으로 넘어간 동안에는 감지가 멈췄어요. 감지하려면 이 화면을 켜 둔 채로 두세요. (눌러서 닫기)</div>}
+
+      {mode === 'smart' && (
+        <div className="glass">
+          <div className="sec-title">3단계 판정<span>세 단계를 거쳐야 '넘어짐'</span></div>
+          <div className="stages">
+            <div className={'stg' + (stage.ff ? ' lit' : '')}><b>①</b>낙하<small>몸이 붕 뜸</small></div>
+            <div className={'stg' + (stage.impact ? ' lit' : '')}><b>②</b>충격<small>{th.toFixed(1)}G 이상</small></div>
+            <div className={'stg' + (stage.still === 'yes' ? ' lit' : stage.still === 'checking' ? ' wait' : stage.still === 'no' ? ' off' : '')}><b>③</b>움직임 없음
+              <small>{stage.still === 'checking' ? '확인 중…' : stage.still === 'no' ? '움직임 있음 → 넘어짐 아님' : stage.still === 'yes' ? '넘어짐으로 판정' : '자세 변화 · 정지'}</small></div>
+          </div>
+          <div className="sims">
+            <button className="sim" disabled={simOn} onClick={() => simulate('fall')}>🧪 넘어짐 흉내</button>
+            <button className="sim ghost" disabled={simOn} onClick={() => simulate('sit')}>🪑 털썩 앉기 흉내</button>
+          </div>
+          <div className="simnote">시연용 가짜 센서 값을 실제 판정 과정에 흘려 보내요. 휴대폰을 던지지 않아도 돼요.</div>
+        </div>
+      )}
+
+      <div className="stats">
+        <div className="glass stat"><div className="ic">💥</div><div className="v">{peak.toFixed(2)}G</div><div className="k">최대 충격</div></div>
+        <div className="glass stat"><div className="ic">📡</div><div className="v">{hz}<span style={{ fontSize: 12, color: '#8f9bbd' }}>Hz</span></div><div className="k">센서 수신</div></div>
+        <div className="glass stat"><div className="ic">📳</div><div className="v" style={{ fontSize: 15, marginTop: 7 }}>{canVibrate ? '지원' : '미지원'}</div><div className="k">진동</div></div>
+      </div>
+
+      <div className="glass">
+        <div className="sec-title">3축 가속도 실시간 파형<span>기준선 {th.toFixed(1)}G</span></div>
+        <canvas ref={canvasRef} />
+        <div className="legend">
+          <span><i style={{ background: '#ff5a7a' }} />X</span>
+          <span><i style={{ background: '#3ee08f' }} />Y</span>
+          <span><i style={{ background: '#4da3ff' }} />Z</span>
+          <span><i style={{ background: '#fff' }} />합성(충격 크기)</span>
+          <span><i style={{ background: '#ffb020' }} />감지 기준</span>
+        </div>
+      </div>
+
+      <div className="glass">
+        <div className="sec-title">감지 민감도<span>정지 상태 ≈ 1G</span></div>
+        <div className="chips">
+          {PRESETS.map(p => (
+            <button key={p.k} className={'chip' + (Math.abs(th - p.v) < 0.05 ? ' sel' : '')} onClick={() => setTh(p.v)}>
+              {p.k} {p.v.toFixed(1)}G<b>{p.d}</b>
+            </button>
+          ))}
+        </div>
+        <input className="slider" type="range" min="1.5" max="4" step="0.1" value={th} onChange={e => setTh(parseFloat(e.target.value))} />
+        <div className="sec-title" style={{ marginTop: 16 }}>판정 방식<span>정밀을 권해요</span></div>
+        <div className="chips">
+          {MODES.map(p => (
+            <button key={p.k} className={'chip' + (mode === p.k ? ' sel' : '')} onClick={() => { setMode(p.k); det.current.phase = 'idle'; setStage({ ff: false, impact: false, still: '' }); }}>
+              {p.t}<b>{p.d}</b>
+            </button>
+          ))}
+        </div>
+        {mode === 'smart' && <>
+          <div className="sec-title" style={{ marginTop: 16 }}>"괜찮으세요?" 기다리는 시간<span>답이 없으면 알림</span></div>
+          <div className="chips">
+            {WAITS.map(w => (
+              <button key={w} className={'chip' + (wait === w ? ' sel' : '')} onClick={() => setWait(w)}>{w}초<b>{w === 15 ? '시연용' : '기본값'}</b></button>
+            ))}
+          </div>
+        </>}
+      </div>
+
+      <div className="glass">
+        <div className="sec-title">감지 기록<span>최근 8건</span></div>
+        {hist.length === 0 ? <div className="empty">아직 감지된 충격이 없습니다.</div> : (
+          <ul className="hist" style={{ marginTop: 6 }}>
+            {hist.map((h, i) => (
+              <li key={i}>
+                <span className="badge" style={BADGE[h.result] ? BADGE[h.result][1] : BADGE.alert[1]}>
+                  {(BADGE[h.result] || BADGE.alert)[0]}
+                </span>
+                <span>{h.g.toFixed(1)}G · {h.source === 'test' ? '흉내' : h.fall ? '낙하→충격' : '충격'}{h.tilt != null ? ` · 자세 ${h.tilt}°` : ''}</span>
+                <time>{h.time}</time>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="foot">🐙 낙지(낙상 지킴이) · 교육·시연용 프로토타입<br />실제 신고 기능 없음 · 의료기기 아님<br />휴대폰을 떨어뜨린 경우도 넘어짐으로 판정될 수 있어요 · 화면을 켜 둔 동안만 감지해요</div>
+
+      <div className="secret-mark" />
+      <button className="secret" aria-label="test" onClick={() => { unlockAudio(); trigger(4.2, 'test'); }} />
+
+      {check && !alarm && (
+        <div className="okcheck" role="alertdialog" aria-labelledby="okq">
+          <div className="a-icon"><Nakji mood="worried" size={118} bob /></div>
+          <h2 id="okq">괜찮으세요?</h2>
+          <div className="lead">넘어지신 것 같아요</div>
+          <div className="okcount"><b>{check.left}</b>초 뒤 보호자에게 알려요</div>
+          <div className="okbtns">
+            <button className="okyes" onClick={answerOk}>괜찮아요</button>
+            <button className="okhelp" onClick={answerHelp}>도와주세요</button>
+          </div>
+        </div>
+      )}
+      {alarm && (
+        <div className="alarm">
+          <div className="pulse" /><div className="pulse p2" /><div className="pulse p3" />
+          <div className="a-icon"><Nakji mood="alarm" size={118} bob /></div>
+          <h2>🚨 낙상 감지!</h2>
+          <div className="lead">보호자 자동 신고 중</div>
+          <div style={{ position: 'relative', fontSize: 14, opacity: .92, marginTop: 4 }}>낙지가 보호자에게 바로 알리고 있어요</div>
+          <div className="a-card">
+            <div className="a-metrics">
+              <div><small>충격 강도</small><b>{alarm.g.toFixed(1)}G</b></div>
+              <div><small>감지 유형</small><b style={{ fontSize: 17, marginTop: 6 }}>{alarm.fall ? '낙하 → 충격' : '급격한 충격'}</b></div>
+              {alarm.tilt != null && <div><small>자세 변화</small><b>{alarm.tilt}°</b></div>}
+              {alarm.still != null && <div><small>넘어진 뒤</small><b style={{ fontSize: 17, marginTop: 6 }}>{alarm.still ? '움직임 없음' : '움직임 있음'}</b></div>}
+            </div>
+            <div className="steps">
+              {steps.map((s, i) => (
+                <div key={i} className={'step' + (i < step ? ' done' : i === step ? ' now' : '')}>
+                  <span className="s-ic">{i < step ? '✓' : ''}</span>{s}{i === 2 && step >= 3 ? ' — 완료' : ''}
+                </div>
+              ))}
+            </div>
+            <div style={{ fontSize: 12, opacity: .8, marginTop: 10 }}>감지 시각 {alarm.time}</div>
+          </div>
+          <button className="cancel" onClick={cancelAlarm}>오작동 취소</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}</script>
+</body>
+</html>

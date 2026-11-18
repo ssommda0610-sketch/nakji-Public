@@ -1,0 +1,17 @@
+{
+  "name": "낙지 · 낙상 지킴이",
+  "short_name": "낙지",
+  "description": "요양병원 어르신을 위한 낙상 예방 교육 챗봇",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f3f6f7",
+  "theme_color": "#1f6f6b",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

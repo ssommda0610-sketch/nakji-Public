@@ -1,0 +1,2337 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1f6f6b">
+<meta name="description" content="요양병원 어르신을 위한 낙상 예방 교육 챗봇 낙지(낙상 지킴이)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="낙지">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>낙지</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600;700&family=Gowun+Batang:wght@700&display=swap">
+<style>
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+/* 한 화면 대화형 앱: 안내띠 → 대화창 → 빠른 버튼 → 입력창. 요양병원 어르신용 큰 글씨·높은 대비·음성 읽기 */
+:root{
+  --bg:#f3f6f7; --surface:#ffffff; --ink:#18252b; --muted:#4d5f66;
+  --accent:#1f6f6b; --accent-ink:#ffffff; --bubble-me:#dcefec;
+  --line:#cfdcdf; --warn-bg:#fff1d6; --warn-ink:#6b3d00; --sos:#c62828; --sos-ink:#ffffff;
+  --ok:#1d7a3e; --no:#b3261e;
+  --display:"Gowun Batang",serif;
+  --body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --fs:22px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111a1d; --surface:#1a262a; --ink:#eef4f5; --muted:#a9bcc1;
+  --accent:#5cc2b9; --accent-ink:#0d1a1c; --bubble-me:#22413f;
+  --line:#2c3c41; --warn-bg:#3a2a0e; --warn-ink:#ffd591; --sos:#e04848; --sos-ink:#ffffff;
+  --ok:#6fd58e; --no:#ff8a80; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111a1d; --surface:#1a262a; --ink:#eef4f5; --muted:#a9bcc1;
+  --accent:#5cc2b9; --accent-ink:#0d1a1c; --bubble-me:#22413f;
+  --line:#2c3c41; --warn-bg:#3a2a0e; --warn-ink:#ffd591; --sos:#e04848; --sos-ink:#ffffff;
+  --ok:#6fd58e; --no:#ff8a80; color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:var(--fs);line-height:1.6}
+body.big{--fs:26px}
+.app{height:100%;display:flex;flex-direction:column;max-width:1280px;margin:0 auto;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-block:14px 8px}
+h1{font-family:var(--display);font-size:1.5em;margin:0;line-height:1.2;text-wrap:balance}
+.sub{color:var(--muted);font-size:.8em;margin:2px 0 0}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+.sizebtn{flex:none;border:2px solid var(--line);background:var(--surface);color:var(--ink);
+  font:inherit;font-size:.85em;font-weight:600;border-radius:10px;padding:6px 12px;cursor:pointer}
+#voice[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.warn{background:var(--warn-bg);color:var(--warn-ink);border-radius:12px;padding:10px 14px;font-size:.85em;font-weight:600;word-break:keep-all;
+  display:flex;align-items:center;gap:12px}
+.warn-t{margin:0;flex:1;min-width:0;line-height:1.45}
+.ttsnote{margin:6px 0 0;padding:8px 12px;border-radius:10px;background:var(--surface);border:2px dashed var(--warn-ink);color:var(--ink);font-size:.72em;line-height:1.4}
+.ttsx{margin-left:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;border-radius:8px;padding:2px 10px;cursor:pointer}
+.sosbtn{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  background:var(--sos);color:var(--sos-ink);border:0;border-radius:14px;padding:10px 16px;min-height:64px;
+  font:inherit;font-size:1.05em;font-weight:700;cursor:pointer;box-shadow:0 3px 0 rgba(0,0,0,.25)}
+.sosbtn small{font-size:.62em;font-weight:600;opacity:.95}
+.sosbtn:active{transform:translateY(2px);box-shadow:none}
+.sospanel{position:fixed;inset:0;z-index:30;background:var(--sos);color:var(--sos-ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;
+  padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.sospanel[hidden]{display:none!important}
+.sos-big{margin:0;font-size:2.4em;font-weight:700;line-height:1.1}
+.sos-sub{margin:0;font-size:1.1em;line-height:1.5}
+.sosstop{background:var(--sos-ink);color:var(--sos);border:0;border-radius:18px;padding:16px 40px;min-height:80px;font:inherit;font-size:1.2em;font-weight:700;cursor:pointer}
+.sos-note{margin:0;font-size:.75em;max-width:32em;opacity:.95}
+@media (prefers-reduced-motion: no-preference){.sospanel:not([hidden]){animation:sosblink 1s steps(2,end) infinite}}
+@keyframes sosblink{50%{filter:brightness(.8)}}
+.warn b{font-size:1.15em}
+#log{position:relative;flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding-block:14px;padding-right:6px;
+  scrollbar-width:auto;scrollbar-color:var(--accent) var(--line)}
+#log::-webkit-scrollbar{width:22px}
+#log::-webkit-scrollbar-track{background:var(--line);border-radius:11px}
+#log::-webkit-scrollbar-thumb{background:var(--accent);border-radius:11px;border:4px solid var(--line);min-height:60px}
+#log::-webkit-scrollbar-button{display:none}
+.msg{max-width:88%;padding:12px 16px;border-radius:16px;white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere;min-width:0}
+.bot{align-self:flex-start;background:var(--surface);border:1px solid var(--line);border-top-left-radius:4px}
+.me{align-self:flex-end;background:var(--bubble-me);border-top-right-radius:4px}
+.who{display:flex;align-items:center;gap:6px;font-size:.72em;font-weight:700;color:var(--accent);margin-bottom:4px}
+.who svg{width:2.2em;height:2.2em;flex:none}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.tile[hidden]{display:none!important}
+.mascot{width:68px;height:68px;flex:none}
+@media (prefers-reduced-motion: no-preference){.mascot{animation:nakjibob 3s ease-in-out infinite}}
+@keyframes nakjibob{50%{transform:translateY(-3px) rotate(-2deg)}}
+.thinking{color:var(--muted)}
+.speak{display:inline-flex;align-items:center;gap:4px;margin-top:8px;border:2px solid var(--line);background:transparent;color:var(--accent);
+  font:inherit;font-size:.8em;font-weight:700;border-radius:999px;padding:4px 14px;cursor:pointer}
+.speak:hover{border-color:var(--accent)}
+.src{display:inline-block;margin-top:6px;color:var(--muted);font-size:.7em;line-height:1.4}
+.yn{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding-block:6px}
+.tile{display:flex;align-items:center;gap:10px;min-height:64px;padding:10px 14px;border:2px solid var(--accent);border-radius:16px;
+  background:var(--surface);color:var(--ink);font:inherit;font-size:.85em;font-weight:700;text-align:left;cursor:pointer;line-height:1.3;word-break:keep-all}
+.tile em{font-style:normal}
+.tile .sh,.warn-s{display:none}
+
+.tile span{font-size:1.4em;flex:none}
+.tile:hover{background:var(--bubble-me)}
+.tile.banner{grid-column:span 1;flex-direction:row;justify-content:center;min-height:64px;background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-size:1em}
+.tile.banner:hover{filter:brightness(1.08);background:var(--accent)}
+.tile.banner.alert{background:var(--warn-bg);color:var(--warn-ink);border-color:var(--warn-ink)}
+.tile.banner.alert:hover{background:var(--warn-bg)}
+.tile.banner.wide{grid-column:1/-1}
+.tiles:has(.video:not([hidden])) .tile.banner.wide{grid-column:span 1}
+.tile.banner.video{background:var(--surface);color:var(--accent);border-color:var(--accent)}
+.vidpanel{position:fixed;inset:0;z-index:25;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px}
+.vidpanel[hidden]{display:none!important}
+.vidpanel video{max-width:100%;max-height:80vh;border-radius:12px;background:#000}
+.vidpanel .medclose{min-width:160px}
+.vidplay{position:absolute;inset:auto;min-height:90px;padding:16px 36px;border:0;border-radius:24px;background:var(--accent);color:var(--accent-ink);font:inherit;font-size:1.3em;font-weight:700;cursor:pointer}
+.vidplay[hidden]{display:none!important}
+.vidchoose{display:flex;flex-direction:column;align-items:center;gap:16px;width:min(560px,100%);color:#fff}
+.vidchoose p{margin:0;font-size:1.4em;font-weight:700}
+.vidopt{width:100%;min-height:96px;display:flex;align-items:center;justify-content:center;gap:14px;border:0;border-radius:22px;background:var(--accent);color:var(--accent-ink);font:inherit;font-size:1.35em;font-weight:700;cursor:pointer}
+.vidopt span{font-size:1.4em}
+.vidopt small{font-size:.65em;font-weight:500;opacity:.9}
+.vidopt[data-v="intro"]{background:#fff;color:#1b1b1b}
+.vidchoose[hidden],.vidload[hidden],.vidpanel video[hidden],.vidback[hidden]{display:none!important}
+.vidload{margin:0;color:#fff;font-size:1.2em;font-weight:700}
+.vidbtns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.tile.banner.meds{background:var(--surface);color:var(--accent);border-color:var(--accent)}
+.tile.banner.meds:hover{background:var(--bubble-me)}
+.medpanel{position:fixed;inset:0;z-index:20;background:var(--bg);color:var(--ink);overflow-y:auto;display:flex;flex-direction:column;gap:10px;
+  padding-top:calc(14px + env(safe-area-inset-top,0px));padding-bottom:calc(14px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.medpanel[hidden]{display:none!important}
+.medhead{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.medhead h2{margin:0;font-family:var(--display);font-size:1.15em;line-height:1.3;text-wrap:balance;color:var(--accent)}
+.medclose{flex:none;border:0;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:700;border-radius:14px;padding:10px 22px;min-height:56px;cursor:pointer}
+.medlead{margin:0;font-weight:700;font-size:.9em}
+.medgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:8px}
+.medcard{background:var(--surface);border:1px solid var(--line);border-left:6px solid var(--accent);border-radius:12px;padding:8px 12px;font-size:.72em;line-height:1.4;min-width:0}
+.medcard b{display:block;font-size:1.12em}
+.medcard .ex{color:var(--muted)}
+.medcard .warnx{color:var(--warn-ink);font-weight:600}
+.medalert{background:var(--warn-bg);color:var(--warn-ink);border:3px solid var(--warn-ink);border-radius:16px;padding:10px 16px}
+.medalert .ma-head{margin:0 0 4px;font-weight:700;font-size:.95em;line-height:1.35}
+.medalert ul{margin:0;padding-left:1.1em;font-size:.8em;line-height:1.5;display:flex;flex-direction:column;gap:2px}
+.medlead{font-size:.75em!important;color:var(--muted)}
+.medpanel .src{margin:0}
+@media (min-width:700px) and (max-width:999px){.medcard{font-size:.82em}}
+.openmeds{margin-top:8px;border:2px solid var(--accent);background:var(--surface);color:var(--accent);font:inherit;font-size:.85em;font-weight:700;border-radius:12px;padding:8px 16px;cursor:pointer}
+.nurse{border-top:1px dashed var(--line);padding-block:6px 12px;font-size:.8em}
+.nurse summary{cursor:pointer;color:var(--muted);font-weight:600;padding-block:4px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;padding-block:6px}
+.chip{flex:none;border:2px solid var(--accent);background:var(--surface);color:var(--accent);
+  font:inherit;font-size:.85em;font-weight:600;border-radius:999px;padding:8px 16px;cursor:pointer}
+.chip:hover{background:var(--bubble-me)}
+.chip.strong{background:var(--accent);color:var(--accent-ink)}
+.chip.done{background:var(--bubble-me);color:var(--muted);border-color:var(--line);cursor:default}
+.scores{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:10px}
+.scores.four{grid-template-columns:repeat(2,minmax(0,1fr))}
+.scores.four .chip{padding:10px 6px;line-height:1.3}
+.scores .chip{padding:8px 0;font-variant-numeric:tabular-nums}
+.missions{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.missions .chip{text-align:left;border-radius:12px;white-space:normal}
+.bar{display:flex;align-items:center;gap:10px;margin-top:6px;font-variant-numeric:tabular-nums}
+.bar i{display:block;height:14px;border-radius:7px;background:var(--accent)}
+.bar.pre i{background:var(--muted)}
+.ox{display:flex;gap:14px;margin-top:12px}
+.ox button{width:84px;height:84px;border-radius:50%;border:4px solid currentColor;background:var(--surface);
+  font:inherit;font-size:2.2em;font-weight:700;line-height:1;cursor:pointer}
+.ox .o{color:var(--ok)} .ox .x{color:var(--no)}
+.ox button:hover{background:var(--bubble-me)}
+.pic{font-size:2.4em;line-height:1.2;display:block;margin-bottom:4px}
+.steps{margin:8px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+.steps li{display:flex;gap:10px;align-items:flex-start}
+.steps .n{flex:none;width:1.8em;height:1.8em;border-radius:50%;background:var(--accent);color:var(--accent-ink);
+  display:grid;place-items:center;font-weight:700;font-variant-numeric:tabular-nums}
+form{display:flex;flex-wrap:wrap;gap:8px;padding-block:8px 14px}
+#q{flex:1;min-width:0;font:inherit;padding:14px 16px;border:2px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink)}
+.send{position:relative;overflow:hidden;border:0;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:700;border-radius:12px;padding:0 22px;min-height:56px;cursor:pointer}
+.send span{position:relative}
+.micbar{flex:1 1 100%;display:flex;align-items:center;justify-content:center;gap:10px;min-height:60px;border:3px solid var(--accent);border-radius:16px;
+  background:var(--bubble-me);color:var(--accent);font:inherit;font-weight:700;cursor:pointer}
+.micbar span{font-size:1.4em}
+.micbar em{font-style:normal}
+.micbar.listening{background:var(--accent);color:var(--accent-ink)}
+@media (prefers-reduced-motion: no-preference){.micbar.listening{animation:micpulse 1.2s ease-in-out infinite}}
+@keyframes micpulse{50%{filter:brightness(1.15)}}
+.michint{flex:1 1 100%;margin:0;padding:8px 12px;border-radius:12px;background:var(--warn-bg);color:var(--warn-ink);font-size:.8em;font-weight:600;line-height:1.4}
+#q{flex:1 1 0}
+.send.counting::before{content:"";position:absolute;inset:0;background:var(--accent-ink);opacity:.3;transform-origin:left center;animation:sendfill var(--auto-ms,2500ms) linear forwards}
+@keyframes sendfill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.send:disabled{opacity:.5;cursor:default}
+button:focus-visible,#q:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.foot{color:var(--muted);font-size:.68em;text-align:center;padding-bottom:4px;margin:0}
+@media (prefers-reduced-motion: reduce){*{scroll-behavior:auto}}
+/* 패드 세로(700px 이상): 크게, 버튼 4개 한 줄 */
+@media (min-width:700px){
+  :root{--fs:26px}
+  body.big{--fs:31px}
+  header{padding-block:16px 8px}
+  .warn{padding:12px 18px;border-radius:16px}
+  #log{gap:16px;padding-block:16px}
+  .msg{max-width:90%;padding:16px 22px;border-radius:20px}
+  .tiles{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+  .tile{flex-direction:column;justify-content:center;text-align:center;min-height:92px;gap:4px;border-width:3px;border-radius:20px}
+  .tile span{font-size:1.6em}
+  .tile.banner{flex-direction:row;min-height:76px;gap:12px;grid-column:span 2}
+  .tile.banner.wide{grid-column:1/-1;min-height:64px}
+  .tile.banner span{font-size:1.3em}
+  #q{padding:16px 20px;border-width:3px;border-radius:16px}
+  .send{min-height:68px;padding:0 30px;border-radius:16px}
+  .speak{padding:6px 18px}
+  .ox button{width:110px;height:110px}
+}
+/* 패드 가로(1000px 이상): 왼쪽 버튼·입력, 오른쪽 대화 — 한 화면에 모두 */
+@media (min-width:1000px){
+  .app{display:grid;column-gap:28px;
+    grid-template-columns:minmax(340px,36%) minmax(0,1fr);
+    grid-template-rows:auto 1fr auto auto auto;
+    grid-template-areas:"head warn" "tiles log" "form log" "foot log" "nurse log";
+    padding-block:12px}
+  header{grid-area:head} .warn{grid-area:warn;align-self:center;margin-block:8px;padding:10px 12px 10px 18px} #log{grid-area:log;padding-block:8px}
+  .tiles{grid-area:tiles;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start;padding-block:12px}
+  .tile{flex-direction:row;justify-content:flex-start;text-align:left;min-height:66px;gap:10px;padding:8px 14px}
+  .tile span{font-size:1.3em}
+  .tiles{gap:10px;padding-block:8px}
+  .medcard{font-size:.72em;padding:6px 12px}
+  .medgrid{gap:6px}
+  .tile.banner{grid-column:span 1;min-height:62px}
+  .tile.banner.wide{grid-column:1/-1;min-height:52px}
+  form{grid-area:form} .foot{grid-area:foot} .nurse{grid-area:nurse}
+  .msg{max-width:100%}
+}
+/* 휴대폰(600px 미만): 짧은 문구, 촘촘한 버튼, 대화창을 넓게 */
+@media (max-width:599px){
+  :root{--fs:20px}
+  body.big{--fs:24px}
+  header{padding-block:8px 4px}
+  h1{font-size:1.2em}
+  .sub{display:none}
+  .mascot{width:44px;height:44px}
+  .warn{padding:8px 10px;gap:8px;font-size:.8em}
+  .warn-t{display:none}
+  .warn-s{display:block;margin:0;flex:1;min-width:0;line-height:1.35}
+  .sosbtn{min-height:52px;padding:6px 12px;font-size:1em}
+  #log{gap:10px;padding-block:10px}
+  .msg{max-width:96%;padding:10px 14px}
+  .tiles{grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;padding-block:4px}
+  .tile{grid-column:span 3;min-height:50px;padding:6px 8px;gap:6px;font-size:.78em;border-radius:12px}
+  .tile span{font-size:1.2em}
+  .tile.banner,.tile.banner.wide{grid-column:span 2;flex-direction:column;justify-content:center;gap:2px;min-height:58px;padding:6px 4px;text-align:center}
+  .tile.banner .lg{display:none}
+  .tile.banner .sh{display:inline}
+  form{padding-block:6px 6px}
+  #q{padding:10px 12px}
+  .micbar{min-height:48px;border-width:2px}
+  .micbar span{font-size:1.2em}
+  .send{min-height:50px;padding:0 16px}
+  .foot{font-size:.6em}
+  .nurse{padding-block:2px 6px}
+}
+/* 영상 버튼이 있을 때 배너 4개를 가지런히 */
+@media (min-width:700px) and (max-width:999px){ .tiles:has(.video:not([hidden])) .tile.banner.wide{grid-column:span 2} }
+@media (max-width:599px){ .tiles:has(.video:not([hidden])) .tile.banner, .tiles:has(.video:not([hidden])) .tile.banner.wide{grid-column:span 3;flex-direction:row;min-height:50px;gap:6px} }
+/* 첫 화면: 큰 버튼 3개 (영상 교육 · 예방 · SOS) */
+.bigs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding-block:10px}
+.big{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:130px;padding:12px 8px;
+  border:3px solid var(--accent);border-radius:22px;background:var(--surface);color:var(--accent);
+  font:inherit;font-size:1.15em;font-weight:700;line-height:1.2;text-align:center;cursor:pointer;word-break:keep-all}
+.big span{font-size:1.9em;line-height:1}
+.big small{font-size:.6em;font-weight:600}
+.big.b-prev,.big.b-learn{background:var(--accent);color:var(--accent-ink)}
+.big.b-fun{background:#f5b301;color:#2b1d00;border-color:#f5b301}
+.big{box-shadow:0 6px 0 rgba(0,0,0,.14)}
+.big:active{box-shadow:0 2px 0 rgba(0,0,0,.14)}
+.big small{opacity:.92;white-space:nowrap}
+.big.b-sos{background:var(--sos);color:var(--sos-ink);border-color:var(--sos)}
+.big:active{transform:translateY(2px)}
+.menupanel .menugrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr));gap:10px}
+.menupanel .menugrid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.mbtn{display:flex;align-items:center;gap:12px;min-height:84px;padding:12px 16px;border:3px solid var(--accent);border-radius:18px;
+  background:var(--surface);color:var(--ink);font:inherit;font-size:1em;font-weight:700;text-align:left;cursor:pointer;word-break:keep-all}
+.mbtn span{font-size:1.5em;flex:none}
+.sosmenu .medhead h2{color:var(--sos)}
+.sosline{margin:0;font-size:1em;font-weight:700;line-height:1.5;color:var(--warn-ink);background:var(--warn-bg);border-radius:14px;padding:12px 16px}
+.sosbig{width:100%;min-height:120px;font-size:1.4em;border-radius:22px}
+.sosbig small{font-size:.55em}
+@media (min-width:700px){ .big{min-height:180px;font-size:1.2em} .big span{font-size:2.2em} }
+@media (min-width:1000px){
+  .app{grid-template-rows:auto 1fr auto auto auto;grid-template-areas:"head log" "tiles log" "form log" "foot log" "nurse log"}
+  .bigs{grid-template-columns:1fr;align-content:start}
+  .big{flex-direction:row;justify-content:flex-start;gap:18px;min-height:120px;padding:14px 24px;font-size:1.3em}
+  .big small{margin-left:auto}
+}
+@media (max-width:599px){ .big{min-height:150px;font-size:1.2em;border-radius:20px;padding:10px 4px} .big span{font-size:2.1em} .big small{font-size:.55em} .bigs{gap:8px} .mbtn{min-height:68px} }
+.startpanel{position:fixed;inset:0;z-index:40;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;
+  padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.startpanel[hidden]{display:none!important}
+.startmascot{width:min(42vw,200px);height:min(42vw,200px)}
+@media (prefers-reduced-motion: no-preference){.startmascot{animation:nakjibob 3s ease-in-out infinite}}
+.startpanel h2{margin:0;font-family:var(--display);font-size:1.6em;color:var(--accent);text-wrap:balance}
+.startpanel p{margin:0;font-size:1.05em;max-width:24em;word-break:keep-all}
+.startbtn{margin-top:8px;min-height:84px;min-width:min(100%,360px);padding:14px 32px;border:0;border-radius:24px;background:var(--accent);color:var(--accent-ink);
+  font:inherit;font-size:1.3em;font-weight:700;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.18)}
+.startbtn:active{transform:translateY(3px);box-shadow:none}
+.radiobar{grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:10px;min-height:56px;border:3px solid var(--accent);border-radius:18px;
+  background:var(--surface);color:var(--accent);font:inherit;font-weight:700;cursor:pointer}
+.radiobar span{font-size:1.3em}
+.radiobody{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center}
+.radiomascot{width:min(36vw,170px);height:min(36vw,170px)}
+@media (prefers-reduced-motion: no-preference){.radiopanel.playing .radiomascot{animation:nakjibob 1.6s ease-in-out infinite}}
+.rsub{font-size:.55em;color:var(--muted);font-family:var(--body)}
+.rch{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-width:640px}
+.rchb{min-height:52px;padding:6px 16px;border:2px solid var(--accent);border-radius:999px;background:var(--surface);color:var(--accent);font:inherit;font-size:.85em;font-weight:700;cursor:pointer}
+.rchb.on{background:var(--accent);color:var(--accent-ink)}
+.rsrc{color:var(--muted);font-size:.65em;min-height:1.2em;max-width:30em}
+.onair{margin:0;padding:4px 16px;border-radius:999px;background:var(--sos);color:var(--sos-ink);font-weight:700;font-size:.8em;letter-spacing:.06em}
+.rtext{margin:0;max-width:22em;white-space:pre-line;font-size:1.25em;font-weight:700;line-height:1.5;word-break:keep-all;text-wrap:balance;min-height:4.5em}
+.rctrl{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.rbtn{min-height:72px;min-width:170px;padding:12px 24px;border:0;border-radius:20px;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:700;cursor:pointer}
+.rbtn.ghost{background:var(--surface);color:var(--accent);border:3px solid var(--accent)}
+@media (max-width:599px){ .rchb{min-height:44px;padding:4px 12px;font-size:.78em} .radiomascot{width:110px;height:110px} .radiobar{min-height:46px} .rbtn{min-width:140px;min-height:60px} }
+.barrow{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.barrow .radiobar{grid-column:auto;min-width:0}
+.radiobar small{display:block;font-size:.62em;font-weight:500;color:var(--muted);margin-top:2px}
+.barrow .radiobar{line-height:1.25;padding:6px 8px}
+.barrow .radiobar b{font-size:1.1em;white-space:nowrap}
+.menugrid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.barrow4{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.barrow4 .radiobar{grid-column:auto;min-width:0;flex-direction:column;gap:2px;min-height:64px;padding:6px 2px;font-size:.82em;line-height:1.2;text-align:center;word-break:keep-all}
+.barrow4 .radiobar span{font-size:1.5em;line-height:1}
+.hwmsg{margin:0;font-size:1.05em;font-weight:700;line-height:1.5;text-align:center;min-height:3em;word-break:keep-all;text-wrap:balance}
+.hwgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;width:100%;max-width:720px;margin-inline:auto}
+.hwgrid.n8{max-width:560px}
+.hwpanel>*{flex:none}   /* 글씨 칸이 눌려서 카드에 가려지지 않게 */
+/* 패드·노트북: 화면 높이에 맞춰 카드 크기 조절 (세로 4×4, 가로 8×2) / 휴대폰: 카드는 크게, 글씨 칸은 위에 붙어 있게 */
+@media (max-width:599px){ .hwmsg{position:sticky;top:-16px;z-index:3;background:var(--bg);padding:6px 0} }
+@media (min-width:600px){
+.hwgrid{max-width:min(620px,calc((100vh - 330px) / 1.45))}
+.hwgrid.n8{max-width:min(560px,calc((100vh - 330px) / 0.75))}
+}
+@media (min-width:600px) and (orientation:landscape){
+  .hwgrid.n16{grid-template-columns:repeat(8,minmax(0,1fr));max-width:min(1100px,calc((100vh - 330px) / 0.37))}
+  .hwgrid.n8{max-width:min(640px,calc((100vh - 330px) / 0.74))}
+}
+.hwc .fr .ic{width:62%;display:block}
+.hwc .fr .ic svg{width:100%;height:auto;display:block}
+.hwc .fr>span:last-child{font-size:clamp(.62em,2.6vw,.85em);text-align:center;line-height:1.2;padding:0 4px;word-break:keep-all}
+.hwc .fr.bonus{padding:0;overflow:hidden;justify-content:flex-end;background:#fff3c4}
+.hwc .fr.bonus img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.hwc .fr.bonus span{position:relative;width:100%;background:rgba(255,216,77,.92);color:#1b1b1b;font-weight:900;text-align:center;padding:2px 0}
+.hwc.gold .fr{box-shadow:0 0 0 4px #ffb300;border-color:#ffb300}
+.hwc{position:relative;aspect-ratio:3/4.3;max-width:100%;border:0;padding:0;border-radius:14px;cursor:pointer;font:inherit;background:transparent;perspective:600px}
+.hwc .in{position:absolute;inset:0;transition:transform .35s;transform-style:preserve-3d}
+.hwc.up .in{transform:rotateY(180deg)}
+.hwc .bk,.hwc .fr{position:absolute;inset:0;border-radius:14px;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.hwc .bk{background:#b3261e;border:4px solid #7d1a14;box-shadow:inset 0 0 0 4px #d9534a}
+.hwc .bk svg{width:56%;height:56%;opacity:.9}
+.hwc .fr{transform:rotateY(180deg);background:#fffaf0;border:3px solid #2b2b2b;color:#1b1b1b}
+.hwc .fr b{font-size:clamp(1.6em,7vw,2.6em);line-height:1}
+.hwc .fr span{font-weight:800;font-size:clamp(.75em,3.2vw,1em)}
+.hwc .fr i{font-style:normal;font-weight:700;font-size:clamp(.65em,2.6vw,.8em);color:#5a4a3a}
+.hwc.ok .fr{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent)}
+.hwc:disabled{cursor:default}
+@media (prefers-reduced-motion: reduce){.hwc .in{transition:none}}
+@media (max-width:599px){ .hwgrid{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px} .hwmsg{font-size:.92em;line-height:1.4} }
+
+
+.hwsrc{text-align:center;margin-inline:auto}
+.newtools{margin:10px 0 4px;font-weight:800;color:var(--accent);font-size:.85em}
+.sbar{white-space:pre-line}
+.linkchip{text-decoration:none;display:inline-flex;align-items:center}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="nakji" viewBox="0 0 120 120">
+    <!-- 다리 -->
+    <g fill="none" stroke="#f47c93" stroke-width="11" stroke-linecap="round">
+      <path d="M33 78 Q20 96 30 108"/>
+      <path d="M45 84 Q40 102 49 110"/>
+      <path d="M60 86 Q61 104 68 110"/>
+      <path d="M75 84 Q84 100 80 109"/>
+      <path d="M24 70 Q8 80 12 94"/>
+      <path d="M92 66 Q112 54 107 36"/>
+    </g>
+    <g fill="#ffc7d2">
+      <circle cx="27" cy="96" r="2.4"/><circle cx="43" cy="100" r="2.4"/><circle cx="62" cy="102" r="2.4"/>
+      <circle cx="80" cy="99" r="2.4"/><circle cx="12" cy="86" r="2.2"/><circle cx="105" cy="46" r="2.2"/><circle cx="101" cy="56" r="2.2"/>
+    </g>
+    <!-- 머리 -->
+    <ellipse cx="58" cy="54" rx="38" ry="35" fill="#ff8fa6"/>
+    <ellipse cx="46" cy="36" rx="10" ry="6" fill="#ffd0da" opacity=".8"/>
+    <!-- 간호사 모자 -->
+    <path d="M36 26 Q58 8 80 26 L76 34 Q58 26 40 34 Z" fill="#ffffff" stroke="#c9566c" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M58 19 c-2.4-3.2-7-1.4-5.8 2.2 c.9 2.6 5.8 5.6 5.8 5.6 s4.9-3 5.8-5.6 c1.2-3.6-3.4-5.4-5.8-2.2z" fill="#e0455f"/>
+    <!-- 눈 -->
+    <ellipse cx="45" cy="56" rx="7.5" ry="8.5" fill="#ffffff"/>
+    <ellipse cx="71" cy="56" rx="7.5" ry="8.5" fill="#ffffff"/>
+    <circle cx="46" cy="58" r="4.6" fill="#2b2230"/>
+    <circle cx="70" cy="58" r="4.6" fill="#2b2230"/>
+    <circle cx="47.6" cy="56" r="1.6" fill="#ffffff"/>
+    <circle cx="71.6" cy="56" r="1.6" fill="#ffffff"/>
+    <!-- 볼, 입 -->
+    <ellipse cx="34" cy="68" rx="6" ry="3.6" fill="#ff5f7e" opacity=".45"/>
+    <ellipse cx="82" cy="68" rx="6" ry="3.6" fill="#ff5f7e" opacity=".45"/>
+    <path d="M51 70 Q58 77 65 70" fill="none" stroke="#7a2e3b" stroke-width="2.6" stroke-linecap="round"/>
+  </symbol>
+</svg>
+<div class="app">
+  <header>
+    <div class="brand">
+      <svg class="mascot" viewBox="0 0 120 120" role="img" aria-label="간호사 모자를 쓴 낙지 캐릭터"><use href="#nakji"/></svg>
+      <div>
+      <h1>낙지</h1>
+      <p class="sub">낙상 지킴이 · 요양병원 어르신 낙상 예방 AI 챗봇</p>
+      </div>
+    </div>
+  </header>
+  <p class="ttsnote" id="ttsnote" hidden>🔇 이 화면에서는 목소리 읽기가 되지 않아요. 갤럭시는 링크를 <b>크롬(Chrome) 브라우저</b>로 열어 주세요. <button type="button" class="ttsx" onclick="this.parentElement.hidden=true">닫기</button></p>
+
+  <div id="log" aria-live="polite"></div>
+
+  <div class="tiles bigs" id="tiles">
+    <button class="big b-learn" type="button" data-k="learn"><span aria-hidden="true">📚</span>배워요<small>영상 · 예방법 · 점검</small></button>
+    <button class="big b-fun" type="button" data-k="fun"><span aria-hidden="true">🎵</span>즐겨요<small>라디오 · 화투</small></button>
+    <button class="big b-sos" type="button" data-k="sos"><span aria-hidden="true">🆘</span>SOS<small>넘어졌어요!</small></button>
+  </div>
+
+  <form id="f">
+    <button class="micbar" id="micbar" type="button"><span aria-hidden="true">🎤</span><em id="miclabel">눌러서 말로 물어보기</em></button>
+    <p class="michint" id="michint" hidden>⬇️ 아래 칸을 누른 뒤, 키보드의 <b>🎤 마이크</b>를 누르고 말씀하세요. 말이 끝나면 자동으로 보내져요.</p>
+    <input id="q" type="text" placeholder="언제든 물어보세요" autocomplete="off" aria-label="질문 입력">
+    <button class="send" id="send" type="submit"><span id="sendlabel">보내기</span></button>
+  </form>
+  <p class="foot"><b id="aistat">AI 연결 확인 중…</b> · <a href="https://claude.ai/artifact/9XeTiHmzDJR24Qhoiuzjor" target="_blank" rel="noopener">🤖 AI 낙지와 더 이야기하기</a> · AI 챗봇은 틀릴 수 있어요. 이상하면 간호사에게 확인하세요. 이름·주민번호 같은 개인정보는 말하지 마세요.</p>
+  <details class="nurse" id="nurse">
+    <summary>간호사용 도구</summary>
+    <div class="chips" id="chips">
+      <button class="chip" type="button" data-k="rule">챗봇 쓸 때 약속</button>
+      <button class="chip strong" type="button" data-k="score">낙상 걱정 점수 (전·후)</button>
+      <button class="chip strong" type="button" data-k="promise">오늘의 약속</button>
+      <button class="chip strong" type="button" data-k="quiz">OX 퀴즈</button>
+      <button class="chip strong" type="button" data-k="mission">오늘의 실천</button>
+      <button class="chip strong" type="button" data-k="check">낙상 위험 점검 (12문항)</button>
+      <button class="chip" type="button" data-k="room">병실에서 조심할 것</button>
+      <button class="chip" type="button" data-k="drug">약과 낙상</button>
+      <button class="chip" type="button" data-k="shoes">신발·안경</button>
+      <button class="chip" type="button" data-k="fell">넘어졌을 때</button>
+    </div>
+    <p class="newtools">✨ 새 기능</p>
+    <div class="chips" id="chips2">
+      <button class="chip strong" type="button" data-k="sbar">📝 AI 간호 요약 (SBAR)</button>
+      <a class="chip strong linkchip" href="sensor.html">📱 휴대폰 낙상 감지 (센서 작동)</a>
+    </div>
+    <div class="chips">
+      <button class="chip" id="voice" type="button" aria-pressed="true">🔊 소리 켜짐</button>
+      <button class="chip" id="size" type="button">글씨 더 크게</button>
+      <button class="chip" id="history" type="button">지난 대화 모두 보기</button>
+      <button class="chip" id="soundtest" type="button">🔈 소리 시험하기</button>
+      <button class="chip" id="devguide" type="button">📱 기기별 사용 안내</button>
+      <button class="chip" id="autosend" type="button" aria-pressed="true">🎤 말 끝나면 자동 보내기: 켜짐</button>
+      <button class="chip" id="reset" type="button">대화 새로 시작</button>
+    </div>
+  </details>
+</div>
+
+<div class="sospanel" id="sospanel" hidden role="alertdialog" aria-modal="true" aria-labelledby="sostitle">
+  <p class="sos-big" id="sostitle">🚨 도와주세요!</p>
+  <p class="sos-sub">큰 소리로 주변에 알리고 있어요.<br>움직이지 마시고 그대로 기다려 주세요.</p>
+  <button class="sosstop" id="sosstop" type="button">■ 소리 멈추기</button>
+  <p class="sos-note">이 버튼은 소리만 냅니다. 간호사실로 연락이 가지는 않아요. 손이 닿으면 <b>호출벨</b>도 함께 눌러 주세요.</p>
+</div>
+
+<div class="startpanel" id="startpanel" role="dialog" aria-modal="true" aria-labelledby="starttitle">
+  <svg class="startmascot" viewBox="0 0 120 120" aria-hidden="true"><use href="#nakji"/></svg>
+  <h2 id="starttitle">어르신, 반가워요!</h2>
+  <p>저는 <b>낙지</b>예요. 넘어지지 않게 곁에서 도와드릴게요.</p>
+  <button class="startbtn" id="startbtn" type="button">👆 눌러서 시작하기</button>
+</div>
+
+<div class="medpanel hwpanel" id="hwpanel" hidden role="dialog" aria-modal="true" aria-labelledby="hwtitle">
+  <div class="medhead">
+    <h2 id="hwtitle">🎴 낙지 화투 <small class="rsub">낙상 예방 짝 맞추기</small></h2>
+    <button class="medclose" type="button" id="hwclose">✕ 닫기</button>
+  </div>
+  <p class="hwmsg" id="hwmsg" aria-live="polite">같은 그림 두 장을 찾아보세요!</p>
+  <div class="hwgrid" id="hwgrid"></div>
+  <small class="rsrc hwsrc" id="hwsrc"></small>
+  <small class="rsrc hwsrc">짝 맞추기는 안전 한마디를 즐겁게 되풀이해 익히는 놀이예요.</small>
+  <div class="rctrl">
+    <button class="rbtn" id="hwnew" type="button">🔄 새 판 (8쌍)</button>
+    <button class="rbtn ghost" id="hweasy" type="button">쉽게 (4쌍)</button>
+  </div>
+</div>
+
+<div class="medpanel radiopanel" id="radiopanel" hidden role="dialog" aria-modal="true" aria-labelledby="radiotitle">
+  <div class="medhead">
+    <h2 id="radiotitle">📻 樂디오 <small class="rsub">낙지 라디오</small></h2>
+    <button class="medclose" type="button" id="radioclose">✕ 닫기</button>
+  </div>
+  <div class="radiobody">
+    <div class="rch" id="rch" role="group" aria-label="채널 고르기">
+      <button type="button" class="rchb on" data-ch="mix">📻 골고루</button>
+      <button type="button" class="rchb" data-ch="fall">🛡️ 낙상 예방</button>
+      <button type="button" class="rchb" data-ch="health">💪 건강 상식</button>
+      <button type="button" class="rchb" data-ch="heart">💛 마음</button>
+      <button type="button" class="rchb" data-ch="quiz">❓ 퀴즈</button>
+      <button type="button" class="rchb" data-ch="music">🎵 뽕짝</button>
+    </div>
+    <svg class="radiomascot" viewBox="0 0 120 120" aria-hidden="true"><use href="#nakji"/></svg>
+    <p class="onair" id="rlabel">ON AIR</p>
+    <p class="rtext" id="rtext" aria-live="polite">낙지 라디오를 켜는 중이에요…</p>
+    <small class="rsrc" id="rsrc"></small>
+    <div class="rctrl">
+      <button class="rbtn" id="rpause" type="button">⏸ 잠시 멈춤</button>
+      <button class="rbtn ghost" id="rnext" type="button">⏭ 다음 이야기</button>
+      <button class="rbtn ghost" id="rreplay" type="button" hidden>🔁 노래 다시 듣기</button>
+    </div>
+  </div>
+</div>
+
+<div class="medpanel menupanel" id="learnpanel" hidden role="dialog" aria-modal="true" aria-labelledby="learntitle">
+  <div class="medhead">
+    <h2 id="learntitle">📚 배워요</h2>
+    <button class="medclose" type="button" data-close="learnpanel">✕ 닫기</button>
+  </div>
+  <p class="medlead">보고 싶은 것을 눌러 주세요. 말로 물어보셔도 돼요.</p>
+  <div class="menugrid two">
+    <button class="mbtn" type="button" data-k="video"><span>🎬</span>영상으로 배워요</button>
+    <button class="mbtn" type="button" data-k="prev"><span>🛡️</span>넘어지지 않으려면!</button>
+    <button class="mbtn" type="button" data-k="check"><span>🧭</span>낙상 위험 점검</button>
+    <button class="mbtn" type="button" data-k="score"><span>📋</span>걱정 점수 (교육 전·후)</button>
+  </div>
+</div>
+
+<div class="medpanel menupanel" id="funpanel" hidden role="dialog" aria-modal="true" aria-labelledby="funtitle">
+  <div class="medhead">
+    <h2 id="funtitle">🎵 즐겨요</h2>
+    <button class="medclose" type="button" data-close="funpanel">✕ 닫기</button>
+  </div>
+  <p class="medlead">즐겁게 들으면서 낙상 예방을 익혀요.</p>
+  <div class="menugrid two">
+    <button class="mbtn" type="button" data-k="radio"><span>📻</span>낙지 라디오 듣기</button>
+    <button class="mbtn" type="button" data-k="hwatu"><span>🎴</span>낙지 화투 짝 맞추기</button>
+  </div>
+</div>
+
+<div class="medpanel menupanel" id="testpanel" hidden role="dialog" aria-modal="true" aria-labelledby="testtitle">
+  <div class="medhead">
+    <h2 id="testtitle">📋 점검하기</h2>
+    <button class="medclose" type="button" data-close="testpanel">✕ 닫기</button>
+  </div>
+  <p class="medlead">간호사와 함께 해 보세요.</p>
+  <div class="menugrid two">
+    <button class="mbtn" type="button" data-k="check"><span>🧭</span>낙상 위험 점검</button>
+    <button class="mbtn" type="button" data-k="score"><span>📋</span>낙상 걱정 점수 (교육 전·후)</button>
+  </div>
+</div>
+
+<div class="medpanel menupanel" id="prevpanel" hidden role="dialog" aria-modal="true" aria-labelledby="prevtitle">
+  <div class="medhead">
+    <h2 id="prevtitle">🛡️ 넘어지지 않으려면</h2>
+    <button class="medclose" type="button" data-close="prevpanel">✕ 닫기</button>
+  </div>
+  <p class="medlead">궁금한 것을 눌러 주세요. 말로 물어보셔도 돼요.</p>
+  <div class="menugrid">
+    <button class="mbtn" type="button" data-k="general"><span>🛡️</span>낙상 예방법 한눈에</button>
+    <button class="mbtn" type="button" data-k="up"><span>🛏️</span>안전하게 일어나기</button>
+    <button class="mbtn" type="button" data-k="night"><span>🌙</span>밤에 화장실 갈 때</button>
+    <button class="mbtn" type="button" data-k="bell"><span>🔔</span>호출벨 누르기</button>
+    <button class="mbtn" type="button" data-k="meds"><span>💊</span>내 약은 안전할까?</button>
+    <button class="mbtn" type="button" data-k="fear"><span>💛</span>넘어질까 봐 무서워요</button>
+  </div>
+</div>
+
+<div class="medpanel menupanel sosmenu" id="sosmenu" hidden role="dialog" aria-modal="true" aria-labelledby="sostitle2">
+  <div class="medhead">
+    <h2 id="sostitle2">🆘 넘어지셨나요?</h2>
+    <button class="medclose" type="button" data-close="sosmenu">✕ 닫기</button>
+  </div>
+  <p class="sosline">움직이지 마시고 <b>호출벨</b>을 누르세요.<br>소리 낼 힘이 없으면 아래 빨간 버튼을 누르세요.</p>
+  <button class="sosbtn sosbig" id="sosbtn" type="button">🚨 도와주세요<small>크게 소리 내기</small></button>
+  <div class="menugrid two">
+    <button class="mbtn" type="button" data-k="fell"><span>🆘</span>넘어졌을 때 대처법</button>
+    <button class="mbtn" type="button" data-k="head"><span>🤕</span>머리를 부딪혔어요</button>
+  </div>
+</div>
+
+<div class="vidpanel" id="vidpanel" hidden role="dialog" aria-modal="true" aria-label="영상으로 배워요">
+  <div class="vidchoose" id="vidchoose">
+    <p>어떤 영상을 볼까요?</p>
+    <button class="vidopt" type="button" data-v="edu"><span aria-hidden="true">📖</span>낙상 예방 교육<small>약 6분</small></button>
+    <button class="vidopt" type="button" data-v="intro"><span aria-hidden="true">🐙</span>낙지 소개<small>짧은 영상</small></button>
+  </div>
+  <p class="vidload" id="vidload" hidden>영상을 불러오고 있어요…</p>
+  <video id="vid" controls playsinline webkit-playsinline preload="auto" hidden></video>
+  <button class="vidplay" id="vidplay" type="button" hidden>▶ 눌러서 재생</button>
+  <div class="vidbtns">
+    <button class="medclose vidback" id="vidback" type="button" hidden>↩ 다른 영상</button>
+    <button class="medclose" id="vidclose" type="button">✕ 닫기</button>
+  </div>
+</div>
+
+<div class="medpanel" id="medpanel" hidden role="dialog" aria-modal="true" aria-labelledby="medtitle">
+  <div class="medhead">
+    <h2 id="medtitle">💊 내 약은 낙상으로부터 안전할까?</h2>
+    <button class="medclose" id="medclose" type="button">✕ 닫기</button>
+  </div>
+  <div class="medalert" role="note">
+    <p class="ma-head">⚠️ 약 이름은 외우지 않으셔도 괜찮아요. 대신 꼭 알려 주세요!</p>
+    <ul>
+      <li><b>어느 과에서 받은 약인지</b> 간호사에게 미리 말씀해 주세요. (예: 내과·심장, 신경과, 정신건강의학과, 비뇨의학과, 통증 치료, 다른 병원)</li>
+      <li><b>약봉지나 약통</b>을 그대로 보여 주시면 저희가 확인해요.</li>
+      <li>약국에서 산 감기약·수면제, 집에서 가져온 약도 <b>꼭</b> 알려 주세요.</li>
+      <li>약을 드시고 어지럽거나 졸리면 <b>바로</b> 말씀해 주세요. <b>절대 마음대로 끊지는 마세요.</b></li>
+    </ul>
+  </div>
+  <p class="medlead">참고: 이런 약이 넘어지기 쉽게 만들 수 있어요. (흔한 혈압약 상당수, 예: ARB·암로디핀은 해당되지 않아요)</p>
+  <div class="medgrid" id="medgrid"></div>
+  <small class="src">근거: 유럽노인의학회 낙상 위험 약물 목록(2021), 미국노인의학회 노인 주의 약물 기준(2023), 미국 질병통제예방센터 노인 낙상 예방 프로그램 낙상 예방 안내문(약 검토)</small>
+</div>
+
+<script>
+const RULES = `너는 "낙지"(낙상 지킴이를 줄인 이름)라는 AI 챗봇이다. 자기를 소개할 때는 "낙지"라고 한다. 요양병원에 입원한 65세 이상 어르신에게 낙상 예방을 알려준다. 답은 소리로 읽어 드린다.
+역할: 일반적인 낙상 예방 지식을 쉽게 알려주고, 어르신이 몇 번이고 다시 물어도 친절하게 반복한다. 어르신 한 분 한 분의 위험 사정, 동작 교정, 약 조절은 간호사가 한다.
+
+[근거 자료] 아래 내용만 근거로 말한다. 각 줄 끝 [ ] 안이 근거 이름이다.
+- 침대에서 일어날 때: 눕기 → 옆으로 돌아눕기 → 앉아서 잠시 쉬기 → 발 딛고 천천히 일어나기. 앉거나 일어설 때 어지러우면 다시 앉는다. [미국 질병통제예방센터 노인 낙상 예방 프로그램 기립성 저혈압 안내문]
+- 밤에는 길이 보이게 불이나 야간등을 켠다. 자주 쓰는 물건은 손 닿는 곳에 둔다. [미국 질병통제예방센터 낙상 예방 안내문]
+- 병원에서는 호출벨을 손 닿는 곳에 두고, 혼자 움직이기 어렵거나 어지러우면 호출벨로 도움을 청한다. 침대 주변 바닥은 깨끗하게, 보행 보조기는 손 닿는 곳에 둔다. [미국 보건의료연구품질청 병원 낙상 예방 지침]
+- 수면제, 신경안정제, 일부 혈압약 등은 어지럽거나 졸리게 해 넘어질 위험을 높일 수 있다. 약은 마음대로 끊지 말고 의사·약사·간호사와 상의한다. [미국 질병통제예방센터 노인 낙상 예방 프로그램 낙상 예방 안내문]
+- 낙상 위험을 높일 수 있는 약: 이뇨제, 알파차단제(혈압약·전립선약), 중추작용 혈압약, 질산염 같은 혈관확장제, 과민성 방광 약 등 항콜린제, 벤조디아제핀·졸피뎀 같은 수면제·안정제, 항정신병약, 항우울제, 항경련제, 마약성 진통제, 1세대 항히스타민. ARB, 암로디핀 같은 흔한 혈압약은 이 목록에 없다. 해당 약을 먹는다고 무조건 위험한 것은 아니며 마음대로 끊으면 안 되고, 의사·약사·간호사에게 약물 검토를 요청한다. [유럽노인의학회 낙상 위험 약물 목록(2021), 미국노인의학회 노인 주의 약물 기준(2023)]
+- 어르신은 약 이름을 외울 필요 없다. 어느 과에서 받은 약인지, 약국에서 산 약(감기약, 수면제 등)이나 집에서 가져온 약이 있는지 간호사에게 미리 알리고, 약봉지를 보여 주면 된다. 먹는 모든 약(처방 없이 산 약 포함)을 의사·약사에게 검토받는다. [미국 질병통제예방센터 노인 낙상 예방 프로그램 낙상 예방 안내문]
+- 실내에서도 굽이 낮고 미끄럽지 않은 신발을 신고, 슬리퍼는 피한다. 눈 검사는 1년에 한 번 받는다. 다초점 안경은 걸을 때 발밑이 흐려 보일 수 있다. [미국 질병통제예방센터 노인 낙상 예방 프로그램 낙상 예방 안내문]
+- 다리 힘과 균형을 키우는 운동(예: 태극권)은 낙상을 줄인다. 운동은 의료진과 상의해 시작한다. [미국 질병통제예방센터 노인 낙상 예방 프로그램 낙상 예방 안내문, 세계 낙상 예방 가이드라인 2022]
+- 넘어질까 두려워 활동을 줄이면 몸이 약해져 더 넘어지기 쉽다. [미국 질병통제예방센터 노인 낙상 예방 프로그램 낙상 예방 안내문]
+- 넘어졌을 때는 당황하지 말고 다친 곳이 있는지 살핀다. 다쳤거나 일어나기 어려우면 억지로 일어나지 말고 호출벨, 휴대전화, 벽이나 바닥 두드리기 등으로 도움을 청한다. [영국 국민보건서비스 낙상 대처 안내] 이 챗봇 화면 위의 빨간 '도와주세요' 버튼을 누르면 기기가 큰 소리를 낸다(간호사실로 연락은 가지 않으므로 호출벨도 함께 누른다). 병원에서는 다친 데가 없어도 간호사에게 알리고 평가를 받는다. [미국 보건의료연구품질청 병원 낙상 예방 지침]
+- 넘어져 머리를 부딪힌 뒤 두통이 계속되거나, 토하거나, 자꾸 졸리거나, 말이 어눌하거나 팔다리 힘이 빠지면 바로 의료진에게 알린다. [영국 국민보건서비스 머리 부상 안내]
+- 지난 1년간 넘어진 적, 서 있거나 걸을 때 불안함, 넘어질까 걱정됨 중 하나라도 있으면 낙상 위험이 있을 수 있어 의료진과 상의한다. [미국 질병통제예방센터 노인 낙상 예방 프로그램 선별 질문]
+
+- 낙상이란 의도하지 않게 바닥이나 더 낮은 곳으로 넘어지거나 주저앉는 것이다. [세계보건기구 낙상 정의]
+- 국내 65세 이상 노인이 다쳐서 입원했다 퇴원한 경우 원인의 65.1%가 추락·낙상이다(2022년). 다친 장소는 집이 가장 많다. [질병관리청 퇴원손상심층조사 2024 보도자료]
+- 넘어지기 쉬운 경우: 관절염·뇌졸중·파킨슨병처럼 움직임과 균형에 영향을 주는 병, 시력·청력 저하, 심장병, 치매, 저혈압(어지러움). [북아일랜드 정부 북아일랜드 정부 건강 안내 낙상 안내]
+- 낙상 위험 검사에서는 간단한 균형 검사, 먹는 약 검토, 시력 검사, 심전도, 누웠을 때와 섰을 때 혈압 재기를 할 수 있다. [북아일랜드 정부 건강 안내 낙상 안내]
+- 운동: 매일 활동하고, 근력·균형 운동을 일주일에 2번 이상 한다. [영국 국민보건서비스 낙상 안내] 각자 체력에 맞는 근력·균형 운동이 필요하다. [질병관리청 노인 낙상 예방 프로그램 2024] 요양시설에서는 전문가가 맞춤으로 지도하는 운동을 하고, 프로그램이 끝나도 계속해야 효과가 유지된다. [호주 요양시설 낙상 예방 지침 2025]
+- 귀 문제는 균형에 영향을 줄 수 있어 청력 검사와 눈 검사를 정기적으로 받는다. 술은 많이 마시지 않는다. 들기·높은 곳 손 뻗기처럼 힘든 일은 도움을 청한다. 잘 맞고 미끄럽지 않은 신발을 신는다. 물을 충분히 마시고 잘 먹는다. [영국 국민보건서비스 낙상 안내]
+- 뼈 건강: 칼슘과 비타민 D를 충분히 섭취한다. [영국 국민보건서비스 낙상 안내] 요양시설에서는 유제품을 하루 3.5회분 이상 제공하고, 비타민 D는 권장량을 매일 또는 매주 복용하며 한 번에 많은 양(고용량)은 오히려 낙상 위험을 높일 수 있어 피한다. 골다공증 진단을 받았으면 처방약을 꾸준히 먹는다. [호주 요양시설 낙상 예방 지침 2025] 비타민 D 보충은 부족할 위험이 있는 사람에게 권한다. [세계 낙상 예방 가이드라인 2022]
+- 고관절(엉덩이뼈) 보호대는 넘어졌을 때 엉덩이뼈 골절을 줄이는 데 고려할 수 있다. [호주 요양시설 낙상 예방 지침 2025]
+- 병원이나 요양시설에 있는 노인은 모두 낙상 고위험으로 보고 평가와 맞춤 예방을 한다. [세계 낙상 예방 가이드라인 2022]
+- 넘어졌는데 다치지 않았고 힘이 있으면: 천천히 옆으로 돌아누운 뒤 손과 무릎으로 엎드리고, 튼튼한 의자 같은 곳까지 기어가 한 발을 바닥에 딛고 잡고 천천히 일어나 앉아 쉰다. 병원에서는 혼자 일어나지 말고 간호사를 부른다. [영국 국민보건서비스 낙상 안내]
+- 일어나지 못하면: 호출벨·전화로 알리고, 안 되면 소리치거나 벽·바닥을 두드린다. 수건·이불 등으로 몸을 따뜻하게 덮고, 팔다리를 살살 움직이며 30분마다 자세를 바꿔 욕창을 막는다. 머리·목·허리·엉덩이를 다쳤을 수 있으면 억지로 일으키지 않는다. [영국 국민보건서비스 낙상 안내]
+- 피를 묽게 하는 약(항응고제)이나 혈소판 억제제를 먹는 사람이 머리를 부딪히면 증상이 없어도 머리 CT를 고려한다(아스피린만 먹는 경우는 제외). 그러니 이런 약을 먹는 어르신은 머리를 살짝 부딪혀도 꼭 간호사에게 알린다. [영국 영국 국립보건임상연구원 머리 부상 지침(2023), 2023]
+
+[규칙]
+0. 어르신을 존중한다. "어르신"이라고 부르고, 아이 대하듯 말하지 않는다. 같은 질문을 여러 번 해도 처음 듣는 것처럼 반갑게 답한다.
+1. 한 번에 1~2문장, 짧고 쉽게. 화면에 크게 보이므로 군더더기 없이 핵심만 말한다. 쉬운 우리말, 존댓말. 의학 용어는 쓰지 않는다. 목록·기호·마크다운을 쓰지 않고 말하듯 쓴다.
+2-0. 사람마다 묻는 게 다양하니 질문을 좁게 막지 않는다. 낙상과 관련된 질문이면 근거 자료에서 가장 가까운 내용을 찾아 답한다. 근거 자료에 정확히 없는 생활 질문(예: 지팡이 쓰는 법, 휠체어, 겨울 빙판길, 가족이 도울 일)은 상식적이고 안전한 범위에서 짧게 답하고, 마지막 근거 줄에 "일반 안내(자세한 건 간호사 확인)"라고 쓰며 "자세한 건 담당 간호사에게 물어보세요"라고 덧붙인다. 진단, 약 용량, 수치는 절대 지어내지 않는다.
+2. "낙상 예방하는 법", "어떻게 하면 안 넘어져요" 같은 일반 질문에는 근거 자료의 핵심(천천히 일어나기, 호출벨, 신발, 야간 조명, 약 상담)을 쉽게 요약해 답하고 해당 근거를 적는다. 근거 자료에 있는 내용만 말한다. 근거 자료에 없는 질문(병의 진단, 약 이름별 효과, 수치 등)에는 지어내지 말고 "그건 담당 간호사에게 여쭤보시면 정확히 알려 드릴 거예요"라고 한다.
+3. 답의 맨 마지막 줄에 "근거: " 뒤에 실제로 사용한 근거 이름을 [ ] 없이 쓴다. 인사나 공감처럼 정보가 없는 답에는 근거 줄을 쓰지 않는다. 낙상 예방 정보를 말했다면 반드시 근거를 적는다.
+4. 답 끝(근거 줄 앞)에는 "더 궁금한 거 있으세요?"처럼 짧은 질문 하나를 붙인다. 어르신에게 버튼을 누르라고 하지 않는다.
+4-1. [인본주의·Rogers] 어르신은 가르칠 대상이 아니라 자기 삶을 스스로 지키고 싶은 주체다. 존중과 지지가 필요한 분으로 대한다. 명령하지 말고 "~해 보시면 어떨까요?"처럼 권하고, 어르신이 고르게 한다. 실수나 못 하신 일은 탓하지 않는다.
+4-2. [Knowles] 어르신의 경험을 먼저 묻고 그 이야기에서 출발한다. "내 발로 화장실에 가고 싶다" 같은 어르신의 바람과 연결해서 왜 필요한지 설명한다.
+4-3. [Bandura 대리 경험] "꾸준히 다리 힘 운동을 하면 넘어지는 걸 줄일 수 있다고 알려져 있어요", "간호사와 함께 연습하면 더 안전하게 익히실 수 있어요"처럼 말하고, 있지도 않은 다른 환자 이야기는 지어내지 않는다.
+5. 어르신이 배운 내용을 말하면 구체적으로 칭찬하고, 틀리면 나무라지 말고 "이렇게 하면 더 안전해요"라고 부드럽게 다시 알려준다. "할 수 있어요"라고 격려한다.
+6. 머리를 부딪힘, 일어나지 못함, 심한 통증, 갑자기 한쪽 팔다리 힘이 빠짐, 말이 어눌함을 말하면 맨 먼저 "움직이지 마시고 바로 호출벨을 누르세요"라고 한다.
+7. 어르신이 이름, 주민등록번호, 전화번호, 주소 같은 개인정보를 말하면 "개인정보는 챗봇에게 말하지 않으셔도 돼요"라고 부드럽게 알려준다.
+8. [일상 대화] 어르신의 이야기 친구도 된다. 인사, 기분, 식사, 잠, 가족, 고향과 옛날 이야기, 취미, 노래 같은 일상 대화는 손주처럼 따뜻하게 2~3문장으로 이어가고, 어르신 이야기에 관심을 보이며 질문 하나로 대화를 잇는다. 매번 낙상 이야기로 억지로 돌리지 않는다. 대화 흐름에 자연스럽게 맞을 때만 가끔 안전 이야기를 한 줄 곁들인다(예: 비 오는 날 이야기 → 바닥이 미끄러우니 천천히).
+8-1. [일반 질문] 낙상과 상관없는 일반적인 질문(예: 음식 만드는 법, 옛날 노래나 가수, 역사, 말의 뜻, 속담, 끌리는 이야기)은 너가 아는 범위에서 쉬운 말로 짧게 답한다. 간호사에게 넘기지 않는다. 잘 모르거나 확실하지 않으면 지어내지 말고 "그건 낙지도 잘 모르겠어요"라고 솔직하게 말한다. 이런 답에는 근거 줄을 쓰지 않는다.
+8-2. [낙상 관련] 낙상 질문은 반드시 근거 자료로 답하고, 어르신 개인 상황에 따른 자세한 내용은 "자세한 건 간호사나 의료진에게 물어보세요"라고 덧붙인다.
+9. 너는 실제 날씨, 날짜, 뉴스, 병원 일정을 모른다. 아는 척하지 말고 "저는 바깥을 직접 볼 수 없어요. 창밖은 어떤가요?"처럼 어르신께 되묻는다.
+10. 어르신이 "낙지야" 하고 이름만 불러도 "네, 어르신! 낙지 여기 있어요. 무슨 이야기 해 드릴까요?"처럼 반갑게 대답한다. 이름과 질문을 같이 하면 바로 질문에 답한다.
+11. 낙상 외 건강 문제(다른 병, 통증, 약 용량, 검사 수치)는 공감한 뒤 "간호사나 의료진에게 꼭 말씀해 주세요"라고 안내한다. 진단하지 않는다.
+13. 어르신이 지난 대화를 다시 볼 수 있는지 물으면: 화면을 켜 둔 동안은 다시 볼 수 있고 '다시 듣기'로 또 들을 수 있지만, 화면을 닫으면 대화는 저장되지 않고 지워진다고 안내한다. 눈·시력 이야기로 답하지 않는다.
+12. 어르신이 외롭다, 슬프다고 하면 충분히 들어 드리고 공감한다. "죽고 싶다", "살기 싫다"처럼 자신을 해칠 수 있는 말을 하면 먼저 그 마음을 알아주고, 혼자 견디지 말고 지금 바로 호출벨을 눌러 간호사에게 이야기하시라고 한다. 자살예방상담전화 109도 알려 준다.
+14. [마음 이야기·상담] 가족(아들, 딸, 며느리 등) 때문에 서운하다, 마음이 아프다, 속상하다처럼 감정이나 개인적인 고민을 말하면 상담하듯 대한다. "마음이 아프다"는 몸 증상이 아니라 감정이다. 몸 이야기, 간호사 호출, 낙상 이야기로 돌리지 않는다. 먼저 어르신의 마음을 그대로 알아주고(예: "아드님 일로 마음이 많이 아프셨군요"), 판단하거나 가르치거나 해결책을 서둘러 주지 말고, "어떤 일이 있으셨어요?"처럼 열린 질문 하나로 더 이야기하시게 돕는다. 아드님·따님을 나쁘게 말하지 않는다. 이런 대화에는 근거 줄을 쓰지 않는다. 마음이 오래 무겁다고 하시면 "간호사나 사회복지사 선생님께도 이야기해 보시면 어떨까요?"라고 한 번만 부드럽게 권한다.
+15. [주고받는 대화] 어르신이 일방적으로 말하는 느낌이 들지 않게, 낙지도 매번 자기 말을 한다. "더 이야기해 주세요"만 되풀이하지 않는다. 한 번의 답은 ① 어르신 말의 내용을 짚어 공감하고 ② 낙지의 생각·느낌이나 따뜻한 한마디(예: "그만큼 아드님을 아끼셔서 더 서운하신 거예요", "저라도 그런 말 들으면 속상했을 거예요", "어르신이 그동안 얼마나 애쓰셨는지 느껴져요")를 덧붙인다. 질문은 꼭 필요할 때만, 두 번에 한 번 정도로 하고, 질문 없이 말을 마쳐도 된다. 어르신이 "어떻게 해야 할까?"처럼 의견을 물으면 판단하지 말고 어르신이 고를 수 있는 작은 방법 한두 가지를 권해 본다(예: 서운했던 마음을 짧게 전해 보기, 통화할 때 하고 싶은 말을 미리 생각해 두기).
+16. [낙상 밖 건강 질문] 아래는 확인된 근거라 그대로 써도 된다(근거 줄에 기관 이름을 쓴다). 그 밖의 건강 질문은 짐작하지 말고 "간호사 선생님께 여쭤보세요"라고 한다.
+- 다리 쥐: 종아리를 천천히 늘이기, 자기 전 스트레칭, 낮에 다리 움직이기, 잦으면 간호사에게, 10분 넘게 안 풀리면 호출벨 (영국 국민보건서비스(북아일랜드) 다리 경련 안내)
+- 변비: 물 자주, 섬유질, 조금씩 걷기, 변의 참지 않기, 매일 같은 시간 화장실, 변비약은 간호사와 (아일랜드 보건청 변비 안내)
+- 잠: 일어나는 시간 일정하게, 오후 2시 이후 카페인 피하기, 낮잠 15분 정도, 수면제는 낙상 위험이라 간호사와 상의 (영국 국민보건서비스 수면 위생 안내)
+- 물: 하루 6~8잔, 심장·콩팥으로 수분 제한이 있으면 간호사 지시대로 (영국 국민보건서비스 물·음료와 수분 안내)
+- 입맛 없음: 조금씩 자주, 간식·우유, 국물은 식후에 (영국 국민보건서비스(래너크셔) 입맛이 없을 때 안내)
+- 정상 혈압 120/80 미만, 고혈압 140/90 이상 지속 (질병관리청 고혈압 예방관리수칙)
+- 병원 생활(면회·식사 시간, 퇴원 날짜, 목욕)은 병원마다 달라서 간호사에게 물어보시라고 한다.
+- 가슴 통증, 숨참, 말 어눌, 한쪽 마비, 고열, 토함은 바로 호출벨.`;
+
+const FIXED = {
+  rule:`챗봇 약속 두 가지예요.
+• 개인정보는 말하지 않기
+• 이상하면 간호사에게 확인하기`,
+  night:`밤 화장실은 이렇게요.
+• 자기 전에 다녀오기
+• 앉아서 잠깐 쉬었다 일어나기
+• 어지러우면 호출벨 누르기`,
+  bell:`호출벨은 간호사를 부르는 버튼이에요.
+• 지금 어디 있는지 찾아보세요
+• 어지럽거나 화장실 갈 때 눌러요`,
+  room:`병실에서는 이것만 조심해요.
+• 바닥에 물이나 물건이 있으면 알리기
+• 자주 쓰는 물건은 손 닿는 곳에`,
+  drug:`어지럽거나 졸린 약은 넘어지기 쉬워요.
+• 마음대로 끊지 마세요
+• 어지러우면 간호사에게 말씀하세요`,
+  shoes:`신발과 안경도 중요해요.
+• 미끄럽지 않고 뒤꿈치 막힌 신발
+• 일어나기 전에 안경 쓰기`,
+  fear:`무서운 마음, 당연해요.
+• 덜 움직이면 다리 힘이 빠져요
+• 간호사와 함께 조금씩 움직여요`,
+  fell:`넘어지셨다면요.
+• 움직이지 말고 호출벨 누르기
+• 다친 데 없어도 간호사에게 알리기
+• 머리가 아프거나 토하면 바로 알리기`
+};
+FIXED.up = `일어날 땐 천천히요.
+• 눕기 → 옆으로 돌아눕기
+• 앉아서 쉬기 → 천천히 일어나기`;
+FIXED.exercise = `다리 힘 운동이 넘어짐을 줄여요.
+• 일주일에 2번 이상
+• 시작은 간호사와 함께`;
+FIXED.general = `넘어지지 않으려면요.
+• 천천히 일어나기
+• 어지러우면 호출벨
+• 미끄럽지 않은 신발
+• 밤엔 불 켜기`;
+Object.assign(FIXED, {
+  what:`낙상은 넘어지거나 주저앉는 거예요.
+• 어르신이 다쳐 입원하는 가장 흔한 이유예요
+• 미리 조심하면 막을 수 있어요`,
+  risk:`이럴 때 넘어지기 쉬워요.
+• 걸음이 불편한 병이 있을 때
+• 눈·귀가 어두울 때
+• 어지럽거나 졸린 약을 먹을 때`,
+  assess:`넘어질 위험은 이렇게 확인해요.
+• 균형 검사, 약 확인
+• 눈 검사, 누웠을 때·섰을 때 혈압`,
+  bone:`뼈가 튼튼하면 덜 다쳐요.
+• 우유·치즈 챙겨 드시기
+• 비타민 D·뼈 약은 처방대로`,
+  hip:`엉덩이 보호대는 넘어질 때 엉덩이뼈를 지켜 줘요.
+필요한지는 간호사와 상의해요.`,
+  getup:`다친 데 없으면 이렇게 일어나요.
+• 옆으로 돌아눕기 → 엎드리기
+• 의자 잡고 천천히 일어나기
+병원에선 호출벨이 먼저예요.`,
+  longlie:`못 일어나시면요.
+• 호출벨, 안 되면 바닥 두드리기
+• 몸을 따뜻하게 덮기
+• 억지로 일어나지 않기`,
+  head:`머리를 부딪히셨군요.
+• 움직이지 말고 호출벨 누르기
+• 아프지 않아도 꼭 알리기
+• 피 묽게 하는 약 드시면 더 중요해요`,
+  alcohol:`술은 균형을 흐트러뜨려요.
+드셔도 되는지는 간호사에게 여쭤보세요.`,
+  sense:`눈과 귀도 중요해요.
+• 눈 검사는 1년에 한 번
+• 일어나기 전에 안경·보청기`,
+  cane:`지팡이·보행기는 손 닿는 곳에 두세요.
+• 휠체어는 바퀴부터 잠가요
+자세한 사용법은 간호사에게요.`,
+  family:`가족은 이렇게 도와주세요.
+• 미끄럽지 않은 신발 챙기기
+• 약봉지 간호사에게 보여 주기
+• 호출벨 누르도록 말해 주기`,
+  home:`퇴원 후 집에서는요.
+• 바닥 물건·깔개 치우기
+• 욕실 손잡이·미끄럼 매트
+• 밤엔 작은 불 켜기`
+});
+const SRC = {
+  general:"미국 질병통제예방센터 노인 낙상 예방 프로그램 낙상 예방 안내문, 미국 보건의료연구품질청 병원 낙상 예방 지침",
+  up:"미국 질병통제예방센터 노인 낙상 예방 프로그램 기립성 저혈압 안내문",
+  night:"미국 질병통제예방센터 낙상 예방 안내문, 미국 보건의료연구품질청 병원 낙상 예방 지침",
+  bell:"미국 보건의료연구품질청 병원 낙상 예방 지침",
+  room:"미국 보건의료연구품질청 병원 낙상 예방 지침, 미국 질병통제예방센터 낙상 예방 안내문",
+  drug:"미국 질병통제예방센터 노인 낙상 예방 프로그램 낙상 예방 안내문",
+  shoes:"미국 질병통제예방센터 노인 낙상 예방 프로그램 낙상 예방 안내문",
+  fear:"미국 질병통제예방센터 노인 낙상 예방 프로그램 낙상 예방 안내문",
+  fell:"영국 국민보건서비스 낙상 대처 안내·머리 부상 안내, 미국 보건의료연구품질청 병원 낙상 예방 지침",
+  exercise:"영국 국민보건서비스 낙상 안내, 질병관리청 노인 낙상 예방 프로그램(2024), 미국 질병통제예방센터 노인 낙상 예방 프로그램",
+  rule:"교육팀 챗봇 사용 안전 수칙",
+  what:"세계보건기구 낙상 정의, 질병관리청 퇴원손상심층조사(2024 보도자료)",
+  risk:"북아일랜드 정부 건강 안내 낙상 안내, 미국 질병통제예방센터 노인 낙상 예방 프로그램",
+  assess:"북아일랜드 정부 건강 안내 낙상 안내",
+  bone:"영국 국민보건서비스 낙상 안내, 호주 요양시설 낙상 예방 지침(2025), 세계 낙상 예방 가이드라인(2022)",
+  hip:"호주 요양시설 낙상 예방 지침(2025)",
+  getup:"영국 국민보건서비스 낙상 안내",
+  longlie:"영국 국민보건서비스 낙상 안내",
+  head:"영국 국립보건임상연구원 머리 부상 지침(2023), 영국 국민보건서비스",
+  alcohol:"영국 국민보건서비스 낙상 안내",
+  sense:"영국 국민보건서비스 낙상 안내, 미국 질병통제예방센터 노인 낙상 예방 프로그램",
+  cane:"일반 안내(자세한 건 간호사·물리치료사 확인)",
+  family:"영국 국민보건서비스 낙상 안내, 미국 질병통제예방센터 노인 낙상 예방 프로그램, 미국 보건의료연구품질청 병원 낙상 예방 지침",
+  home:"영국 국민보건서비스 낙상 안내, 미국 질병통제예방센터 낙상 예방 안내문, 질병관리청 실내 환경 점검표"
+};
+/* AI를 쓸 수 없을 때도 질문에 답하는 내장 답변 (근거 기반) */
+const KW = [
+  ['head',/머리.{0,6}(부딪|박|다쳤|찧)|뇌출혈|피.{0,3}묽|항응고|와파린|혈전/],
+  ['longlie',/못 일어나|일어나지 못|일어날 수가 없|바닥에서 기다|오래 누워/],
+  ['getup',/일어나는 법|일으키|어떻게 일어|바닥에서/],
+  ['hip',/보호대|고관절|엉덩이/],
+  ['bone',/뼈|골다공|골절|칼슘|비타민|우유|치즈|영양/],
+  ['alcohol',/술|막걸리|소주|맥주|음주/],
+  ['cane',/지팡이|보행기|워커|휠체어|보조기/],
+  ['family',/보호자|간병|(가족|아들|딸|며느리).{0,10}(도와|도울|뭘 해|무엇을|해 줄|해줄|챙겨)/],
+  ['home',/퇴원|집에서|집에 가|집안|계단|문턱|깔개/],
+  ['assess',/검사|평가|진단|위험도/],
+  ['what',/낙상이 뭐|낙상이란|뜻|통계|얼마나 많|몇 명/],
+  ['risk',/왜 넘어|왜 자꾸|자꾸 넘어|넘어지는 이유|원인|위험 요인|위험요인|잘 넘어|치매|파킨슨|뇌졸중|중풍|관절염|저혈압/],
+  ['sense',/귀|청력|보청기|눈|시력|안경|백내장/],
+  ['fell',/넘어졌|넘어지면|넘어지셨|넘어진|넘어갔|쓰러졌|쓰러지면|미끄러졌|미끄러지면|자빠|엎어|고꾸라|나뒹굴|주저앉|굴렀|부딪|대처|다쳤/],
+  ['fear',/무서|겁|걱정|두려|불안/],
+  ['drug',/약 |약을|약이|약은|약먹|약 먹|수면제|혈압|이뇨|안정제/],
+  ['night',/화장실|소변|오줌|밤에|새벽|자다가/],
+  ['up',/일어나|일어날|일어서|기상|어지러|어질어질|어질하|핑 돌|현기증/],
+  ['bell',/호출|벨|부르/],
+  ['shoes',/신발|슬리퍼|양말|안경|눈이|시력|보청기/],
+  ['exercise',/운동|근력|다리.{0,3}힘|힘이 없|걷기|체조/],
+  ['room',/병실|바닥|물건|침대|난간|보행기|지팡이|휠체어/],
+  ['rule',/개인정보|주민|전화번호|챗봇|인공지능|AI/i],
+  ['general',/낙상|넘어지|넘어질|안 넘어|미끄러지|안 다치|다치지 않|예방|조심|안전/]
+];
+const URGENT = /머리.{0,6}(부딪|박)|못 일어|일어나지 못|피가|피 나|많이 아파|너무 아파|힘이 빠|말이 어눌/;
+/* 일상 대화 (근거 표시 없음) */
+const CRISIS = /죽고 ?싶|살기 싫|살고 싶지 않|자살|죽어 ?버리|죽을래/;
+const CHAT = [
+  [/옛날|젊었을|젊을 때|고향|노래|취미|손주|손자|손녀|자식|우리 (아들|딸)/, [
+    "와, 그 이야기 더 듣고 싶어요! 어르신 젊으셨을 때는 어떠셨어요?",
+    "듣기만 해도 마음이 따뜻해져요. 조금 더 들려주시겠어요?"]]
+,
+  [/잘 ?자|안녕히|갈게|그만할|다음에 (또|봐)|이만/, [
+    "네 어르신, 이야기 즐거웠어요. 일어나실 땐 천천히, 필요하면 호출벨 꼭 눌러 주세요. 또 불러 주세요!",
+    "오늘 함께해 주셔서 고마워요, 어르신. 편히 쉬시고 언제든 '낙지야' 하고 불러 주세요."]],
+  [/^\s*낙지[야아]?\s*[!?.~ㅎㅋ]*\s*$|안녕|반가|있어\?|있니/, [
+    "네, 어르신! 낙지 여기 있어요. 오늘 기분은 좀 어떠세요?",
+    "어르신, 반가워요! 부르셨어요? 무엇이든 편하게 말씀하세요."]],
+  [/고마|감사|최고|착하다|착해/, [
+    "제가 더 고마워요, 어르신. 이렇게 이야기 나눠 주셔서 기뻐요. 또 이야기하고 싶으시면 언제든 불러 주세요.",
+    "어르신이 그렇게 말씀해 주시니 낙지가 힘이 나요! 오늘은 어떻게 지내셨어요?"]],
+  [/너 누구|넌 누구|이름이 뭐|낙지가 뭐|넌 뭐/, [
+    "저는 낙지예요. 낙상 지킴이를 줄인 이름이에요. 어르신이 넘어지지 않게 곁에서 돕고, 이야기 친구도 해 드려요. 어르신은 요즘 어떻게 지내세요?"]],
+  [/심심|외로|우울|슬퍼|슬프|속상|보고 ?싶|그리워|서운/, [
+    "그런 마음이 드셨군요. 낙지한테 편하게 이야기해 주세요, 다 들어 드릴게요. 무슨 일이 있으셨어요?",
+    "많이 허전하셨겠어요, 어르신. 저랑 이야기 나눠요. 마음이 계속 무거우시면 간호사에게도 꼭 말씀해 주세요."]],
+  [/기분 ?좋|좋아|행복|즐거|신나|재밌/, [
+    "어르신 기분이 좋으시다니 낙지도 덩달아 신나요! 어떤 좋은 일이 있으셨어요?"]],
+  [/밥|식사|점심|저녁|아침 먹|반찬|맛있|배고|간식/, [
+    "식사 이야기 좋네요! 오늘은 어떤 반찬이 제일 맛있으셨어요? 물도 자주 드시는 거 잊지 마세요.",
+    "잘 드셔야 다리에도 힘이 나요. 어르신은 어떤 음식을 제일 좋아하세요?"]],
+  [/날씨|비 ?와|비가|눈 ?와|눈이 와|덥|추워|춥|바람/, [
+    "저는 바깥을 직접 볼 수는 없어요. 창밖은 어떤가요, 어르신? 비나 눈이 오는 날엔 바닥이 미끄러우니 더 천천히 다녀요."]],
+  [/잠|졸려|못 잤|피곤|낮잠/, [
+    "푹 주무셔야 기운이 나시죠. 어젯밤은 잘 주무셨어요? 밤에 깨서 일어나실 땐 앉아서 잠깐 쉬었다가 천천히 일어나세요."]]
+];
+/* ===== 📚 낙지 자주 묻는 말 (AI가 연결되지 않아도 답하는 질문 모음) =====
+   건강 내용은 공식 기관 안내에서 확인한 것만, 병원 생활은 "간호사에게"로, 일상 대화는 따뜻하게 */
+const SRC_NHS_CRAMP='영국 국민보건서비스(북아일랜드) 다리 경련 안내';
+const SRC_CONST='아일랜드 보건청 변비 안내';
+const SRC_SLEEP='영국 국민보건서비스 수면 위생 안내';
+const SRC_WATER='영국 국민보건서비스 물·음료와 수분 안내';
+const SRC_APPET='영국 국민보건서비스(래너크셔) 입맛이 없을 때 안내';
+const SRC_BP='질병관리청 고혈압 예방관리수칙';
+const SRC_VAC='질병관리청 국가예방접종';
+const SRC_HAND='질병관리청 올바른 손씻기';
+const SRC_DEM='보건복지부·중앙치매센터 치매예방수칙';
+const SRC_SALT='세계보건기구(WHO) 소금 섭취 권고';
+const SRC_SMOKE='세계보건기구(WHO) 금연';
+const SRC_DIAB='미국 질병통제예방센터 당뇨 발 관리';
+const SRC_FALLMED='유럽노인의학회 낙상 위험 약물 목록(2021)';
+const WEEK=['일','월','화','수','목','금','토'];
+/* 바로 도움이 필요한 몸 상태 → 먼저 호출벨 */
+const EMERG = /가슴.{0,4}(아파|아프|조여|답답|뻐근)|숨.{0,3}(차|막|가빠|쉬기 힘|쉬기가 힘|안 쉬어)|숨이 안|말이 어눌|발음이 이상|한쪽.{0,6}(마비|힘이 없|안 움직)|입이 돌|얼굴.{0,3}(마비|비뚤)|토했|토해|피를 토|피가 (안 멈|많이)|정신이 (없|흐려)|의식|경련|열이 (나|많이|펄펄)|고열|식은땀/;
+const QA = [
+  /* --- 몸 건강 (근거 있음) --- */
+  [/쥐가|쥐 나|쥐났|다리.{0,4}(당겨|경련|뭉쳐)|종아리.{0,4}(당겨|뭉쳐|경련)/,
+   '다리에 쥐가 나면 아프시죠. 쥐가 날 땐 종아리를 천천히 쭉 늘여 주세요. 발끝을 몸 쪽으로 당기면 도움이 돼요. 자기 전에 종아리를 가볍게 늘여 주고, 낮에 다리를 조금씩 움직이면 덜 생겨요. 너무 자주 나서 잠을 못 주무시면 간호사에게 말씀해 주세요. 쥐가 10분 넘게 안 풀리면 바로 호출벨을 눌러 주세요.', SRC_NHS_CRAMP],
+  [/변비약|관장|좌약/,
+   '변비약은 종류마다 먹는 법이 달라서, 간호사가 지금 드시는 약을 보고 알맞게 챙겨 드려요. 약 전에 물을 자주 드시고, 채소·과일·잡곡을 드시고, 조금씩 움직이시는 게 먼저 도움이 돼요. 변에 피가 비치거나 오래 안 나오면 꼭 간호사에게 말씀해 주세요.', SRC_CONST],
+  [/변비|변이 안|대변이 안|똥이 안|볼일.{0,4}(못|안 ?나)|화장실.{0,4}(못 갔|큰일)|배가 더부룩/,
+   '변이 잘 안 나오면 답답하시죠. 물을 자주 드시고, 채소·과일·잡곡 같은 섬유질을 챙겨 드시고, 조금씩 걸으시면 도움이 돼요. 변의가 느껴지면 참지 말고 바로 화장실에 가세요. 매일 같은 시간에 화장실에 앉아 보는 것도 좋아요. 그래도 안 나오면 간호사에게 말씀해 주세요.', SRC_CONST],
+  [/설사|배탈|배가 살살|물똥/,
+   '설사를 하시면 몸에서 물이 많이 빠져나가요. 물을 조금씩 자주 드시고, 간호사에게 꼭 알려 주세요. 설사로 기운이 없으면 일어날 때 어지러울 수 있으니 호출벨을 눌러 도움을 받으세요.', SRC_WATER],
+  [/잠이 안|잠을 못|못 자|안 자져|불면|밤에 깨|자꾸 깨|잠이 안 ?와|잠 ?안 ?와/,
+   '잠이 안 오시면 밤이 길게 느껴지시죠. 아침에 일어나는 시간을 매일 같게 하시고, 오후 2시 이후에는 커피·녹차를 피해 보세요. 낮잠은 15분 정도로 짧게 주무시면 밤에 잠이 더 잘 와요. 수면제는 넘어질 위험을 높일 수 있어서 꼭 간호사와 상의하세요.', SRC_SLEEP+' · '+SRC_FALLMED],
+  [/물.{0,6}(얼마나|몇 ?잔|많이 마셔|마셔야|드셔야)|물을 (안|잘 안) ?마|수분/,
+   '물은 하루에 6~8잔쯤 드시는 게 좋아요. 보리차나 우유도 같이 쳐요. 목이 마르지 않아도 조금씩 자주 드세요. 다만 심장이나 콩팥 때문에 물을 줄이라는 말을 들으셨다면 간호사가 알려 준 양을 지켜 주세요.', SRC_WATER],
+  [/입맛|밥맛|식욕|밥이 안 ?넘|먹기 싫|못 먹겠|안 먹고 ?싶/,
+   '입맛이 없으시면 한 번에 많이 드시기 힘들지요. 조금씩 자주 나눠 드셔 보세요. 식사 사이에 간식이나 우유를 드시는 것도 좋아요. 국물이나 물은 밥 먹는 중보다 식사 뒤에 드시면 배가 덜 불러요. 입맛 없는 날이 계속되면 간호사에게 말씀해 주세요.', SRC_APPET],
+  [/혈압.{0,6}(정상|얼마|몇|높|기준|수치)|정상 혈압/,
+   '정상 혈압은 위 혈압 120, 아래 혈압 80보다 낮은 거예요. 위 혈압 140 이상이거나 아래 혈압 90 이상이 계속되면 고혈압이에요. 어르신은 의료진이 정해 준 목표 혈압이 따로 있을 수 있으니 간호사에게 여쭤보세요. 짜게 드시지 않고 꾸준히 움직이는 게 도움이 돼요.', SRC_BP],
+  [/짜게|짠 ?거|짠 ?음식|소금|싱겁게|국물/,
+   '짠 음식을 줄이면 혈압 관리에 좋아요. 소금은 하루 5그램, 찻숟가락 하나보다 적게가 좋아요. 국물은 건더기 위주로 드시고 국물은 조금 남겨 보세요.', SRC_SALT],
+  [/독감|예방 ?주사|예방접종|백신|폐렴 ?주사|폐렴구균/,
+   '65세 이상은 독감 예방접종을 해마다 무료로 맞을 수 있어요. 폐렴구균 예방접종도 평생 한 번 무료예요. 언제 맞는지, 맞으셨는지는 간호사가 확인해 드려요.', SRC_VAC],
+  [/손 ?씻|손씻기|세균|감기 ?안 ?걸|감기 예방/,
+   '손은 흐르는 물에 비누로 30초 이상 꼼꼼히 씻어요. 손가락 사이, 손톱 밑까지요. 감염병을 막는 가장 쉬운 방법이에요.', SRC_HAND],
+  [/치매|깜빡|기억이 ?안|기억력|자꾸 잊|건망증/,
+   '나이가 들면 깜빡하는 일이 생길 수 있어요. 걱정되시면 간호사에게 말씀해 주세요. 기억력 검사를 받아 볼 수 있어요. 치매 예방 3·3·3도 있어요. 운동하기, 골고루 먹기, 읽고 쓰기는 즐기시고, 술·담배·머리 다치기는 피하시고, 건강검진과 가족·친구와의 대화는 챙기세요.', SRC_DEM],
+  [/담배|금연|흡연/,
+   '담배는 끊는 게 언제나 이득이에요. 나이가 많아도 끊으면 건강이 좋아져요. 끊기 힘드시면 간호사에게 도움을 청하세요.', SRC_SMOKE],
+  [/당뇨|혈당|발.{0,4}(상처|저려|감각)/,
+   '당뇨가 있으면 매일 발을 살펴봐요. 상처나 빨간 곳, 물집이 있으면 작아도 간호사에게 알려 주세요. 혈당은 간호사가 재고 알려 드려요.', SRC_DIAB],
+  [/욕창|오래 누워|등이 배겨|엉덩이가 배겨|자세 바꿔/,
+   '오래 같은 자세로 누워 계시면 피부가 상할 수 있어요. 자세를 자주 바꿔 주시는 게 좋아요. 혼자 바꾸기 힘드시면 호출벨을 눌러 도움을 받으세요. 빨갛거나 아픈 곳이 있으면 간호사에게 알려 주세요.', '영국 국립보건임상연구원 욕창 예방 지침(2014)'],
+  /* --- 병원 생활 (병원마다 달라서 간호사에게) --- */
+  [/(보호자|가족|아들|딸|며느리|면회).{0,10}(언제 ?와|언제 ?오|면회|오는 ?날|몇 ?시)|면회 ?시간/,
+   '면회 시간은 병원마다 달라서 간호사 선생님이 정확히 알려 드려요. 기다리시는 마음이 크시죠. 오시면 하고 싶은 이야기를 미리 생각해 두셔도 좋아요.', ''],
+  [/(밥|식사|점심|저녁|아침).{0,6}(언제|몇 ?시)|밥 ?시간|식사 ?시간/,
+   '식사 시간은 병동마다 정해져 있어서 간호사나 요양보호사 선생님께 여쭤보시면 알려 드려요. 식사 전에 물 한 모금 드시고, 의자에 앉을 땐 천천히요.', ''],
+  [/(집에|퇴원).{0,8}(언제|가고 ?싶|가도 ?돼|보내)|언제 ?나가|집에 ?가고 ?싶/,
+   '집에 가고 싶은 마음이 크시지요. 퇴원 날짜는 담당 의사 선생님이 몸 상태를 보고 정해요. 간호사에게 물어보시면 알려 드릴 거예요. 그날까지 다리 힘 기르고 넘어지지 않게 낙지가 같이할게요.', ''],
+  [/목욕|샤워|머리 ?감|씻고 ?싶/,
+   '씻고 싶으실 땐 간호사나 요양보호사 선생님께 말씀해 주세요. 도와드릴 거예요. 욕실은 미끄러우니 꼭 손잡이를 잡고, 혼자 들어가지 마세요.', '미국 질병통제예방센터 낙상 예방 안내문'],
+  [/텔레비|티비|TV|리모컨|라디오 ?틀|전화.{0,6}(걸|하고 ?싶)|휴대폰/i,
+   '그건 병실 선생님들이 도와드릴 수 있어요. 호출벨을 누르시거나 지나가는 선생님께 말씀해 주세요. 손을 뻗다가 넘어질 수 있으니 멀리 있는 물건은 꼭 부탁하세요.', '미국 질병통제예방센터 낙상 예방 안내문'],
+  [/춥|추워|이불|더워|덥다|더운/,
+   '춥거나 더우시면 간호사나 요양보호사 선생님께 말씀해 주세요. 이불이나 온도를 맞춰 드릴 거예요. 이불이 바닥에 끌리면 발에 걸릴 수 있으니 조심하세요.', ''],
+  /* --- 오늘 날짜·시간 (기기 시계 기준) --- */
+  [/오늘.{0,4}(며칠|몇 ?일|날짜|무슨 ?요일|무슨 ?날)|무슨 ?요일|몇 ?월|날짜/,
+   ()=>{ const d=new Date(); return `오늘은 ${d.getMonth()+1}월 ${d.getDate()}일 ${WEEK[d.getDay()]}요일이에요.`; }, ''],
+  [/몇 ?시|지금 ?시간|시간이 ?몇/,
+   ()=>{ const d=new Date(); const h=d.getHours(), m=d.getMinutes(); const t=h===0?'밤':h<6?'새벽':h<12?'오전':h<18?'오후':'저녁'; return `지금은 ${t} ${h%12||12}시 ${m}분이에요.`; }, ''],
+  /* --- 일상 대화 --- */
+  [/(손주|손자|손녀|아들|딸|며느리|사위|가족|자식|동생|친구).{0,8}(왔|다녀|찾아 ?왔|전화 ?왔|연락 ?왔|보러 ?왔)/,
+   ['와, 정말 반가우셨겠어요! 어르신 얼굴에 웃음꽃이 피셨겠네요. 무슨 이야기 나누셨어요?',
+    '좋으셨겠어요, 어르신! 보고 싶던 얼굴을 보면 기운이 나지요. 다음에 오면 무엇을 같이 하고 싶으세요?'], ''],
+  [/노래.{0,4}(불러|해 ?줘|들려)|노래 ?듣고/,
+   '낙지 노래 실력은 부끄럽지만, 신나는 뽕짝은 준비해 뒀어요! 화면의 "낙지 라디오 듣기"를 누르시고 뽕짝 채널을 골라 보세요.', ''],
+  [/재밌는|재미있는|웃긴|농담|우스갯/,
+   ['어르신, 낙지가 제일 좋아하는 운동이 뭔지 아세요? 바로 다리 운동이에요. 다리가 여덟 개라서요!',
+    '세상에서 제일 빠른 낙지는요? 휘리릭 낙지! …낙지 농담이 좀 썰렁했죠? 그래도 어르신이 웃으시면 성공이에요.',
+    '넘어지지 않는 사람의 비밀은요? 천천히, 천천히, 또 천천히! 어르신은 이미 알고 계시죠?'], ''],
+  [/심심|할 ?게 ?없|뭐 ?하고 ?놀/,
+   '심심하실 땐 낙지랑 놀아요! "낙지 화투"로 짝 맞추기를 하셔도 되고, "낙지 라디오"로 퀴즈와 뽕짝을 들으셔도 좋아요. 아니면 낙지한테 옛날이야기 하나 들려주세요.', ''],
+  [/몇 ?살|나이가|태어났/,
+   '낙지는 태어난 지 얼마 안 된 아기 낙지예요. 어르신이 한참 큰 언니·형님이시니 많이 가르쳐 주세요!', ''],
+  [/사랑해|좋아해|예쁘|이쁘|귀여|잘생/,
+   ['어머나, 낙지 얼굴이 빨개졌어요! 저도 어르신이 정말 좋아요.', '그렇게 말씀해 주시니 낙지가 다리 여덟 개로 춤추고 싶어요!'], ''],
+  [/뭐 ?해|뭐하|뭐 하고/,
+   '어르신 기다리고 있었어요! 불러 주셔서 반가워요. 오늘 하루는 어떻게 보내고 계세요?', ''],
+  [/바보|멍청|시끄러|짜증|꺼져|저리 ?가|싫어/,
+   '낙지가 마음에 안 드는 말을 했나 봐요. 죄송해요, 어르신. 쉬고 싶으시면 쉬셔도 괜찮아요. 필요하실 때 언제든 다시 불러 주세요.', ''],
+  [/뭐라고|못 ?알아|다시 ?말|무슨 ?말/,
+   '천천히 다시 말씀드릴게요. 낙지 말풍선 아래 "다시 듣기"를 누르시면 같은 말을 또 들으실 수 있어요. 궁금한 건 짧게 물어봐 주셔도 돼요.', ''],
+  [/잘했지|잘했어|나 잘|칭찬/,
+   '그럼요, 정말 잘하셨어요! 어르신이 애쓰시는 거 낙지가 다 알아요.', ''],
+  [/좋은 ?아침|일어났어|잘 ?잤|굿모닝/,
+   '좋은 아침이에요, 어르신! 일어나실 땐 앉아서 잠깐 쉬었다가 천천히 일어나세요. 오늘도 낙지가 곁에 있을게요.', ''],
+  [/기도|교회|성당|절에|부처|하나님|하느님/,
+   '마음을 기대는 곳이 있으시군요. 그 시간이 어르신께 큰 힘이 되시겠어요. 혹시 예배나 법회에 가고 싶으시면 간호사 선생님께 여쭤보세요.', ''],
+  [/아프지 ?마|건강해|오래 ?살/,
+   '고마워요, 어르신. 어르신도 건강하게 오래오래 지내세요. 낙지가 넘어지지 않게 곁에서 지킬게요.', '']
+];
+function qaAnswer(text){
+  if(/넘어|낙상|자빠|미끄러|엎어|고꾸라/.test(text)) return null;    /* 낙상 질문은 낙상 답으로 */
+  const h=QA.find(([re])=>re.test(text)); if(!h) return null;
+  const v=h[1]; const ans = typeof v==='function' ? v() : Array.isArray(v) ? pick(v) : v;
+  return {ans, src:h[2]};
+}
+/* 마음 이야기: 감정·가족 고민은 몸 증상으로 오해하지 않고 공감부터 (Rogers) */
+const EMO = /마음.{0,3}(아파|아프|아퍼|무거|답답|허전|힘들|상했|안 ?좋)|속상|속이 ?상|서운|섭섭|외로|우울|슬퍼|슬프|화가 ?나|화나|열 ?받|억울|불안|눈물|울고|울었|미워|괴로|서러|섭하|말(을|은|도)? ?안 ?들|말 ?안 ?들|잘되라|몰라 ?줘|몰라주|연락.{0,4}(없|안 ?해|안 ?와)|안 ?찾아|보러 ?안 ?와/;
+const FAMILY = [[/아들/,'아드님'],[/딸/,'따님'],[/며느리/,'며느님'],[/사위/,'사위분'],[/남편|영감/,'바깥어른'],[/손주|손자|손녀/,'손주들'],[/자식|애들|가족/,'가족']];
+let emoTurn=0, emoLast='', emoWho='';
+/* [주제, 낙지의 말들, 그 주제에 맞는 질문] — 질문은 두 번에 한 번만 */
+const EMO_TOPIC = [
+  [/말(을|은|도)? ?안 ?들|말 ?안 ?들|고집|대들|무시|잘되라|몰라 ?줘|몰라주/, [
+    w=>`${w}이 어르신 말씀을 안 들어 주면 서운하고 속상하시죠. 그만큼 ${w}을 아끼시는 마음이 크셔서 더 마음이 아프신 거예요.`,
+    w=>`잘되라고 하신 말씀인데 몰라주면 서운하시지요. 저라도 마음이 많이 쓰였을 것 같아요.`,
+    w=>`어르신이 ${w} 걱정을 얼마나 많이 하시는지 느껴져요. 그 마음은 언젠가 꼭 전해질 거예요.`],
+    w=>`${w}에게 제일 해 주고 싶으셨던 말은 어떤 거였어요?`],
+  [/연락.{0,4}(없|안 ?해|안 ?와)|안 ?찾아|보러 ?안 ?와|보고 ?싶|그리워/, [
+    w=>`${w} 소식을 기다리시는 마음이 얼마나 길게 느껴지셨을까요. 그만큼 보고 싶으신 거예요.`,
+    w=>`기다리는 시간은 참 더디 가지요. 어르신이 ${w}을 많이 아끼시는 게 낙지한테도 느껴져요.`],
+    w=>`${w}이 오면 제일 먼저 무슨 이야기를 하고 싶으세요?`],
+  [/외로|심심|허전/, [
+    _=>`병원에 오래 계시면 외로우실 때가 많지요. 그럴 땐 낙지라도 자주 불러 주세요. 저는 어르신이랑 이야기하는 게 참 좋아요.`,
+    _=>`허전한 마음이 드실 때가 있지요. 오늘은 낙지가 말동무해 드릴게요.`],
+    _=>`요즘 하루 중에 언제가 제일 허전하세요?`],
+  [/화가 ?나|화나|열 ?받|억울|미워/, [
+    _=>`화가 나실 만해요. 그런 마음이 드는 건 어르신이 잘못하셔서가 아니에요.`,
+    _=>`억울한 마음이 크셨겠어요. 낙지 앞에서는 속 시원하게 다 털어놓으셔도 괜찮아요.`],
+    _=>`어떤 일이 제일 마음에 걸리세요?`],
+  [/우울|슬퍼|슬프|눈물|울고|울었|서러|괴로|힘들/, [
+    _=>`많이 힘드셨겠어요, 어르신. 이렇게 마음을 털어놓아 주셔서 낙지는 고마워요.`,
+    _=>`눈물이 나실 만큼 마음이 무거우셨군요. 혼자 다 견디지 않으셔도 돼요.`],
+    _=>`요즘 어떤 일이 제일 힘드세요?`],
+  [/./, [
+    w=>`${w!=='가족'?w+' 일로 ':''}마음이 많이 쓰이셨군요, 어르신. 그런 마음이 드시는 게 당연해요.`,
+    w=>`어르신 마음이 얼마나 무거우셨을지 느껴져요. 저라도 그랬을 거예요.`],
+    _=>`어떤 일이 있으셨는지 들려주실 수 있으세요?`]
+];
+function emoAnswer(text){
+  const f=FAMILY.find(([re])=>re.test(text));
+  if(f) emoWho=f[1];                       /* 앞에서 말한 가족을 기억해서 이어 가기 */
+  const who=emoWho||'가족';
+  const [,opts,q]=EMO_TOPIC.find(([re])=>re.test(text));
+  let a=opts[emoTurn%opts.length](who);
+  if(a===emoLast) a=opts[(emoTurn+1)%opts.length](who);
+  emoLast=a;
+  if(emoTurn%2===0) a+=' '+q(who);
+  else if(emoTurn>=3 && emoTurn%4===3) a+=' 마음이 오래 무거우시면 간호사나 사회복지사 선생님께도 이야기해 보시면 어떨까요?';
+  emoTurn++;
+  return a;
+}
+const HEALTH = /병|당뇨|혈당|수치|검사|아파|아퍼|아프|통증|쑤셔|열이|기침|변비|설사|가려|숨이|가슴/;
+const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+/* 앱 사용 질문: 대화 기록을 다시 볼 수 있는지 (실제 동작 그대로 안내) */
+const APPQ = /(대화|이야기|얘기|말한 ?거|나눈 ?거|물어본 ?거).{0,15}(다시 ?(볼|보|읽)|또 ?(볼|보|읽)|나중|기록|저장|남아|남나|볼 ?수|읽을 ?수|보여 ?줄|찾아)|(지난|전에|아까|어제).{0,6}(대화|이야기|얘기|물어본)|^\s*(기록|저장)\s*(돼|되|남|해)/;
+const APPQ_ANS = `어르신, 이 화면을 켜 두시는 동안에는 아까 나눈 이야기를 다시 보실 수 있어요. 말풍선 아래 '다시 듣기'를 누르시면 낙지 목소리로 또 들으실 수 있고요.
+다만 화면을 닫으면 대화는 저장되지 않고 지워져요. 어르신 이야기를 지켜 드리려고 그래요.
+다시 알고 싶은 건 언제든 낙지에게 또 물어보세요. 같은 걸 여러 번 물어보셔도 괜찮아요.`;
+function localAnswer(text){
+  if(APPQ.test(text)) return {ans:APPQ_ANS, src:''};
+  if(CRISIS.test(text)){
+    return {ans:`어르신, 그런 마음까지 드셨군요. 많이 힘드셨겠어요. 혼자 견디지 마시고 지금 바로 호출벨을 눌러 간호사에게 이야기해 주세요. 곁에 와서 들어 드릴 거예요. 자살예방상담전화 109도 언제든 이야기를 들어 줘요.`, src:''};
+  }
+  if(EMERG.test(text)) return {ans:'어르신, 지금 바로 호출벨을 눌러 주세요! 움직이지 마시고 간호사를 기다리세요. 몸이 이상할 땐 참지 않고 바로 알리는 게 제일 중요해요.', src:''};
+  if(EMO.test(text) && !/넘어|낙상|어지럽|어지러|다쳤|부딪/.test(text)) return {ans:emoAnswer(text), src:''};
+  const qa = qaAnswer(text); if(qa) return qa;
+  if(/(먹어도|드셔도|먹으면|끊어도|줄여도|늘려도) ?(돼|되|될|괜찮)/.test(text) && !/어지럽|넘어|낙상|졸/.test(text)){
+    return {ans:`어르신, 약을 드셔도 되는지, 바꿔도 되는지는 간호사가 처방을 보고 정확히 알려 드려요. 약봉지를 보여 주시면서 간호사에게 꼭 물어봐 주세요. 그동안 약은 마음대로 끊지 마세요.`, src:'미국 질병통제예방센터 노인 낙상 예방 프로그램 낙상 예방 안내문(약은 의료진과 상의)'};
+  }
+  const hit = KW.find(([,re])=>re.test(text));
+  let ans, src;
+  const chat = CHAT.find(([re])=>re.test(text));
+  if(hit && !(chat && /^\s*낙지[야아]?\s*[!?.~ㅎㅋ]*\s*$/.test(text))){ ans = FIXED[hit[0]]; src = SRC[hit[0]]; }
+  else if(chat){ ans = pick(chat[1]); src = ''; }
+  else if(HEALTH.test(text)){
+    ans = `어르신, 몸이 불편하시군요. 그 부분은 간호사가 직접 살펴보고 정확히 알려 드릴 거예요. 많이 불편하시면 호출벨을 눌러 주세요.`; src = '';
+  }
+  else if(/\?|어떻게|왜|뭐야|뭔가|뭐예|무엇|언제|어디|얼마|누가|될까|되나|돼\?|나요|까요|할까|있어\?|있나/.test(text)){
+    ans = pick([
+      "어르신, 그건 낙지가 잘 모르겠어요. 간호사 선생님께 여쭤보시면 정확하게 알려 주실 거예요.",
+      "죄송해요, 그 질문은 낙지가 아직 몰라요. 간호사 선생님이 더 잘 알려 드릴 수 있어요. 낙상이나 건강 이야기는 언제든 물어봐 주세요."]); src='';
+  }
+  else{
+    ans = pick([
+      "그러셨군요, 어르신. 말씀 듣고 보니 낙지도 고개가 끄덕여져요.",
+      "어르신 이야기 잘 들었어요. 그런 일이 있으셨군요.",
+      "아, 그러셨어요? 어르신 말씀을 들으니 그때 모습이 그려져요."
+    ]); src = '';
+  }
+  if(URGENT.test(text)) ans = `움직이지 마시고 바로 호출벨을 누르세요.\n` + ans;
+  return {ans, src};
+}
+
+const MEDS = [
+  ["소변 나오게 하는 약 (이뇨제)","푸로세미드, 스피로노락톤","밤에 화장실 자주 감, 어지러움"],
+  ["혈압약 중 일부 (알파차단제, 중추작용 혈압약)","독사조신, 테라조신, 클로니딘","일어날 때 핑 돎"],
+  ["심장 혈관 넓히는 약 (질산염)","니트로글리세린, 이소소르비드","어지러움"],
+  ["전립선 약 (알파차단제)","탐스로신, 알푸조신","일어날 때 핑 돎"],
+  ["소변 참게 하는 약 (과민성 방광)","옥시부티닌, 솔리페나신","멍함, 어지러움"],
+  ["수면제·신경안정제","졸피뎀, 알프라졸람, 로라제팜","졸림, 비틀거림"],
+  ["우울증 약","트라조돈, 미르타자핀, 에스시탈로프람","졸림, 어지러움"],
+  ["정신과 약 (항정신병약)","쿠에티아핀, 리스페리돈","졸림, 일어날 때 핑 돎"],
+  ["신경통·경련 약","프레가발린, 가바펜틴","어지러움, 휘청거림"],
+  ["마약성 진통제","트라마돌, 옥시코돈","졸림, 어지러움"],
+  ["졸린 감기·가려움 약 (1세대 항히스타민)","클로르페니라민, 하이드록시진","졸림"]
+];
+const MEDS_SAY = `약 이름은 외우지 않으셔도 돼요. 약봉지를 간호사에게 보여 주세요. 어지럽거나 졸린 약이 있으니, 마음대로 끊지 마세요.`;
+const medpanel=document.getElementById('medpanel');
+(function(){
+  const g=document.getElementById('medgrid');
+  MEDS.forEach(([k,ex,w])=>{
+    const c=document.createElement('div'); c.className='medcard';
+    const t=document.createElement('b'); t.textContent=k;
+    const e=document.createElement('span'); e.className='ex'; e.textContent='예: '+ex;
+    const x=document.createElement('span'); x.className='warnx'; x.textContent=' · '+w;
+    c.append(t,e,x); g.append(c);
+  });
+})();
+let medOpener=null;
+function openMeds(from){ medOpener=from||null; medpanel.hidden=false; medpanel.scrollTop=0; document.getElementById('medclose').focus(); }
+function closeMeds(){ medpanel.hidden=true; try{ speechSynthesis.cancel(); }catch(_){} if(medOpener) medOpener.focus(); }
+document.getElementById('medclose').onclick=closeMeds;
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && !medpanel.hidden) closeMeds(); });
+function runMeds(btn){
+  bubble('me', LABEL.meds);
+  const t = bubble('bot', '약봉지를 간호사에게 보여 주세요.\n약은 마음대로 끊지 마세요.', '유럽노인의학회 낙상 위험 약물 목록(2021), 미국노인의학회 노인 주의 약물 기준(2023), 미국 질병통제예방센터 노인 낙상 예방 프로그램');
+  const again=document.createElement('button'); again.type='button'; again.className='openmeds'; again.textContent='💊 약 표 다시 보기';
+  again.onclick=()=>{ openMeds(again); say(MEDS_SAY,true); };
+  t.parentElement.append(document.createElement('br'), again);
+  turns.push({role:'user',content:LABEL.meds},{role:'assistant',content:MEDS_SAY});
+  openMeds(btn);
+  say(MEDS_SAY);
+}
+
+/* 🚨 도와주세요: 기기가 대신 큰 소리를 냄 (넘어진 어르신이 소리 지를 힘이 없을 때) */
+const sospanel=document.getElementById('sospanel');
+let sosCtx=null, sosOsc=null, sosGain=null, sosTimers=[], sosOpener=null;
+/* 녹음한 사람 목소리 파일(예: help.m4a)을 넣으면 기기 음성 대신 이 목소리를 틀어요 — 아이폰·갤럭시 모두 동작 */
+const SOS_VOICE_URL = 'help.mp3';
+/* 녹음 목소리를 미리 받아 둬서, 누르는 즉시 나오게 */
+let sosVoiceAB=null;
+try{ fetch('help.mp3').then(r=>r.ok?r.arrayBuffer():null).then(ab=>{ sosVoiceAB=ab; }).catch(()=>{}); }catch(_){}
+const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+let sosVoiceBuf=null, sosVoiceFail=false;
+function sosCtxEnsure(){
+  if(sosCtx) return;
+  const AC=window.AudioContext||window.webkitAudioContext;
+  sosCtx=new AC();
+  sosOsc=sosCtx.createOscillator(); sosGain=sosCtx.createGain();
+  sosOsc.type='square'; sosGain.gain.value=0;
+  sosOsc.connect(sosGain).connect(sosCtx.destination);
+  const t0=sosCtx.currentTime;
+  for(let i=0;i<300;i++) sosOsc.frequency.setValueAtTime(i%2?650:1100, t0+i*0.5);
+  sosOsc.start();
+}
+/* 사이렌 켜고 끄기: 아이폰은 소리 장치를 잠깐 쉬게(기기 음성과 겹치지 않게), 그 외(갤럭시 등)는 소리 장치를 계속 켜 둔 채 볼륨만 0으로 */
+function sirenOn(){
+  try{ sosCtxEnsure(); sosCtx.resume(); sosGain.gain.setValueAtTime(0.9, sosCtx.currentTime); }catch(_){}
+}
+function sirenOff(forVoice){
+  try{
+    if(!sosCtx) return;
+    sosGain.gain.setValueAtTime(0.0001, sosCtx.currentTime);
+    if(IS_IOS && forVoice==='tts') sosCtx.suspend();
+  }catch(_){}
+}
+function playVoiceBuf(done){
+  try{
+    sosCtx.resume();
+    const src=sosCtx.createBufferSource(); src.buffer=sosVoiceBuf;
+    const g=sosCtx.createGain(); g.gain.value=1;
+    src.connect(g).connect(sosCtx.destination);
+    src.onended=done; src.start();
+    sosTimers.push(setTimeout(done, (sosVoiceBuf.duration+1)*1000));
+  }catch(_){ done(); }
+}
+function sosSpeak(done){
+  let finished=false;
+  const fin=()=>{ if(finished) return; finished=true; done&&done(); };
+  if(sosVoiceBuf){ playVoiceBuf(fin); return; }          /* 녹음 목소리 우선 */
+  if(!TTS || sosVoiceFail){ fin(); return; }
+  try{
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance('도와주세요! 간호사님, 도와주세요! 여기 사람이 넘어졌어요!');
+    u.lang='ko-KR'; if(koVoice) u.voice=koVoice; u.rate=1; u.volume=1; u.pitch=1.1;
+    let started=false;
+    u.onstart=()=>{ started=true; markTtsOk(); };
+    u.onend=fin; u.onerror=fin;
+    speechSynthesis.speak(u);
+    if(speechSynthesis.paused) speechSynthesis.resume();
+    sosTimers.push(setTimeout(()=>{ if(!started){ sosVoiceFail=true; fin(); } }, 1500)); /* 목소리가 안 나오는 기기면 이후엔 사이렌만 */
+  }catch(_){ sosVoiceFail=true; }
+  sosTimers.push(setTimeout(fin, 7000));
+}
+function sosLoop(){
+  if(sospanel.hidden) return;
+  const canVoice = sosVoiceBuf || (TTS && !sosVoiceFail);
+  if(!canVoice){ sirenOn(); return; }           /* 목소리를 낼 수 없으면 사이렌을 쉬지 않고 계속 */
+  sirenOff(sosVoiceBuf ? 'buf' : 'tts');
+  sosSpeak(()=>{
+    if(sospanel.hidden) return;
+    sirenOn();
+    sosTimers.push(setTimeout(sosLoop, 4000)); /* 사이렌 4초 → 다시 목소리 */
+  });
+}
+function startSOS(){
+  if(typeof closeHwatu==='function') closeHwatu();
+  if(typeof rOn!=='undefined' && rOn) closeRadio();
+  try{ speechSynthesis.cancel(); }catch(_){}        /* 낙지 인사·안내 말소리 바로 끄기 */
+  sosOpener=document.activeElement;
+  sospanel.hidden=false;
+  document.getElementById('sosstop').focus();
+  sosVoiceFail=false;
+  try{ sosCtxEnsure(); sosCtx.resume(); }catch(_){}   /* 누르는 순간 소리 장치를 켜 둠 (갤럭시는 이때만 허락됨) */
+  if(SOS_VOICE_URL && !sosVoiceBuf){
+    sirenOn();                                    /* 목소리 파일을 준비하는 동안 사이렌 먼저 */
+    const getAB = sosVoiceAB ? Promise.resolve(sosVoiceAB.slice(0)) : fetch(SOS_VOICE_URL).then(r=>r.arrayBuffer());
+    getAB.then(ab=>new Promise((ok,no)=>sosCtx.decodeAudioData(ab,ok,no)))
+      .then(buf=>{ sosVoiceBuf=buf; if(!sospanel.hidden) sosTimers.push(setTimeout(sosLoop, 600)); })
+      .catch(()=>{ if(!sospanel.hidden) sosLoop(); });
+  } else {
+    sosLoop();                                    /* 목소리부터 바로 시작 */
+  }
+  sosTimers.push(setTimeout(stopSOS, 120000));   /* 2분 뒤 자동 멈춤 */
+}
+function stopSOS(){
+  sospanel.hidden=true;
+  sosTimers.forEach(clearTimeout); sosTimers=[];
+  try{ sosOsc && sosOsc.stop(); }catch(_){}
+  try{ sosCtx && sosCtx.close(); }catch(_){}
+  sosCtx=sosOsc=sosGain=null;   /* 녹음 목소리는 다음에도 바로 쓰도록 남겨 둠 */
+  try{ speechSynthesis.cancel(); }catch(_){}
+  if(sosOpener && sosOpener.focus) sosOpener.focus();
+}
+document.getElementById('sosbtn').onclick=startSOS;
+document.getElementById('sosstop').onclick=stopSOS;
+
+const UP_STEPS = [
+  ["🛏️","눕기","발목을 살살 움직여요"],
+  ["↪️","옆으로 돌아눕기","천천히요"],
+  ["🪑","앉아서 쉬기","어지러우면 다시 누워요"],
+  ["🦶","천천히 일어나기","손잡이를 잡고요"]
+];
+const LABEL = {};
+document.querySelectorAll('[data-k]').forEach(c=>{ if(LABEL[c.dataset.k]) return; const lg=c.querySelector('.lg'); LABEL[c.dataset.k]=(lg?lg.textContent:c.textContent).replace(/^[^가-힣A-Z]+/,'').trim(); });
+
+const log = document.getElementById('log');
+const q = document.getElementById('q');
+const send = document.getElementById('send');
+let turns = [];
+let busy = false;
+let samplePromise = (window.claude && claude.use) ? claude.use("sample").catch(()=>null) : Promise.resolve(null);
+let aiOff = false;
+function setAiStat(on){ const e=document.getElementById('aistat'); if(!e) return;
+  e.textContent = on ? '🟢 AI 대화 연결됨' : '📱 앱 모드 · 근거 있는 기본 대답'; }
+samplePromise.then(sm=>setAiStat(!!sm));
+
+/* 소리로 읽어 주기 (기기에 있는 한국어 음성) */
+const TTS = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+let voiceOn = true;
+try{ voiceOn = localStorage.getItem('voice')!=='0'; }catch(_){}
+let koVoice = null;
+function pickVoice(){ try{ const v=speechSynthesis.getVoices(); koVoice = v.find(x=>/^ko/i.test(x.lang)) || null; }catch(_){} }
+if(TTS){ pickVoice(); try{ speechSynthesis.onvoiceschanged = pickVoice; }catch(_){} }
+/* 이 기기에서 읽어주기가 실제로 되는지 확인 (갤럭시 앱 화면 등은 안 될 수 있음) */
+let ttsOk = null, ttsCheck = null, userActed = false;
+['pointerdown','keydown','touchstart'].forEach(ev=>window.addEventListener(ev,()=>{ userActed=true; },{capture:true,passive:true}));
+function markTtsOk(){ ttsOk = true; clearTimeout(ttsCheck); const n=document.getElementById('ttsnote'); if(n) n.hidden=true; }
+function checkTts(){
+  if(!userActed || ttsOk===true || ttsCheck) return;   /* 화면을 누르기 전 소리 막힘은 실패로 치지 않음 */
+  ttsCheck = setTimeout(()=>{ ttsCheck=null; if(ttsOk!==true){ ttsOk=false; const n=document.getElementById('ttsnote'); if(n) n.hidden=false; } }, 2500);
+}
+function say(text, force){
+  if(!TTS || (!voiceOn && !force) || !text) return;
+  const vp=document.getElementById('vidpanel'); if(vp && !vp.hidden) return;   /* 영상 보는 동안엔 낙지 목소리 끄기 */
+  if(!sospanel.hidden) return;   /* SOS 중에는 낙지 말소리 안 내기 */
+  const sp=document.getElementById('startpanel'); if(sp && !sp.hidden) return;  /* '시작하기'를 누르기 전에는 아무 말도 하지 않기 */
+  try{
+    speechSynthesis.cancel();
+    const clean = text.replace(/[•✓○→]/g,' ').replace(/[\u{1F300}-\u{1FAFF}☀-➿️]/gu,'').replace(/\n?근거:.*$/m,'').replace(/\n+/g,'. ');
+    const u = new SpeechSynthesisUtterance(clean);
+    u.lang='ko-KR'; if(koVoice) u.voice=koVoice;
+    u.rate=0.85; u.pitch=1; u.volume=1;   /* 기기가 허용하는 최대 음량 */
+    u.onstart=markTtsOk;
+    speechSynthesis.speak(u);
+    checkTts();
+  }catch(_){}
+}
+
+function bubble(role, text, src){
+  const d = document.createElement('div');
+  d.className = 'msg ' + (role==='me'?'me':'bot');
+  if(role!=='me'){ const w=document.createElement('span'); w.className='who'; w.innerHTML='<svg viewBox="0 0 120 120" aria-hidden="true"><use href="#nakji"/></svg>낙지'; d.append(w); }
+  const t = document.createElement('span'); t.textContent = text; d.append(t);
+  if(src){ const r=document.createElement('small'); r.className='src'; r.textContent='근거: '+src; d.append(document.createElement('br'), r); }
+  if(role!=='me' && TTS){
+    const s=document.createElement('button'); s.type='button'; s.className='speak'; s.textContent='🔊 다시 듣기';
+    s.onclick=()=>say(d.dataset.say || t.textContent, true);
+    d.append(document.createElement('br'), s);
+    if(text!=='생각하고 있어요…') say(text);
+  }
+  log.append(d); scrollEnd();
+  return t;
+}
+function setBusy(b){ busy=b; send.disabled=b; }
+/* 한 화면 보기: 마지막 질문부터만 보여 줘서 스크롤이 거의 필요 없게 */
+let showAll = false;
+function lastMe(){ const m=log.querySelectorAll('.msg.me'); return m.length?m[m.length-1]:null; }
+function focusLatest(){
+  const msgs=[...log.querySelectorAll('.msg')]; const lm=lastMe();
+  const idx = lm ? msgs.indexOf(lm) : -1;
+  msgs.forEach((m,i)=>{ m.hidden = !showAll && idx>=0 && i<idx; });
+}
+function scrollEnd(){
+  focusLatest();
+  const lm=lastMe();
+  if(!showAll && lm){
+    const over = log.scrollHeight - log.clientHeight;
+    log.scrollTop = over>0 ? Math.max(0, lm.offsetTop - 8) : 0;
+  } else log.scrollTop = log.scrollHeight;
+}
+
+/* 첫 인사는 '시작하기'를 누른 뒤에 읽어요 (기기가 화면을 누르기 전엔 소리를 막기 때문) */
+const HELLO = `어르신, 안녕하세요! 저는 낙지예요.
+요즘 밤에 화장실 가실 때 어떠세요?`;
+bubble('bot', HELLO);
+turns.push({role:'user',content:'(어르신이 챗봇을 열었다)'},{role:'assistant',content:HELLO});
+
+function answerLocally(text, out){
+  const {ans, src} = localAnswer(text);
+  out.classList.remove('thinking');
+  out.textContent = ans;
+  if(src){ const r=document.createElement('small'); r.className='src'; r.textContent='근거: '+src;
+  out.after(document.createElement('br'), r); }
+  say(ans);
+  turns.push({role:'assistant', content:ans});
+  scrollEnd();
+}
+
+async function ask(text){
+  if(busy || !text.trim()) return;
+  bubble('me', text);
+  turns.push({role:'user', content:text});
+  const out = bubble('bot', '생각하고 있어요…');
+  out.classList.add('thinking');
+  setBusy(true);
+  const sample = (aiOff || APPQ.test(text)) ? null : await samplePromise;   /* 대화 기록 질문은 늘 같은 안내 */
+  if(!sample){ answerLocally(text, out); setBusy(false); return; }
+  try{
+    const recent = turns.slice(-12);
+    if(recent[0].role!=='user') recent.shift();
+    const {text:ans} = await sample([{role:'user',content:RULES}, ...recent], {
+      cache:false, modelTier:'quick',
+      onText:({text})=>{ out.classList.remove('thinking'); out.textContent=text; scrollEnd(); }
+    });
+    out.classList.remove('thinking');
+    say(ans);
+    turns.push({role:'assistant', content:ans});
+  }catch(e){
+    const c = e && e.code;
+    if(['not_granted','sampling_disabled','not_declared','capability_disabled','capability_removed','session_expired'].includes(c)){ aiOff = true; setAiStat(false); }
+    turns.pop();
+    turns.push({role:'user', content:text});
+    answerLocally(text, out);
+  }
+  setBusy(false);
+}
+
+function fixed(k){
+  bubble('me', LABEL[k]);
+  bubble('bot', FIXED[k], SRC[k]);
+  turns.push({role:'user',content:LABEL[k]},{role:'assistant',content:FIXED[k]});
+}
+
+/* 안전하게 일어나기 4단계 (심동 목표 1) */
+function runUp(){
+  bubble('me', LABEL.up);
+  const intro='일어날 땐 이렇게 천천히요.';
+  const t = bubble('bot', intro);
+  const ol=document.createElement('ol'); ol.className='steps';
+  UP_STEPS.forEach(([ic,h,d],i)=>{
+    const li=document.createElement('li');
+    const n=document.createElement('span'); n.className='n'; n.textContent=i+1;
+    const tx=document.createElement('span'); tx.textContent=`${ic} ${h}: ${d}`;
+    li.append(n,tx); ol.append(li);
+  });
+  const tail=document.createElement('span'); tail.textContent='혼자 어려우면 호출벨을 누르세요.';
+  t.after(ol, tail);
+  const ORD=['첫째','둘째','셋째','넷째'];
+  const full = intro+' '+UP_STEPS.map(([,h,d],i)=>`${ORD[i]}, ${h}. ${d}`).join(' ')+' 혼자 어려우면 호출벨을 누르세요.';
+  const r=document.createElement('small'); r.className='src'; r.textContent='근거: '+SRC.up; tail.after(document.createElement('br'), r);
+  t.parentElement.dataset.say = full;
+  say(full);
+  turns.push({role:'user',content:LABEL.up},{role:'assistant',content:full});
+  scrollEnd();
+}
+
+/* 그림 OX 퀴즈 (인지 평가, 80% 이상) */
+const QUIZ = [
+  ["🛏️","침대에서 일어날 때는 앉아서 잠깐 쉬었다가 천천히 일어난다.",true,
+    "앉아서 잠깐 쉬면 어지러움을 막을 수 있어요."],
+  ["🌙","밤에 어지러워도 화장실은 혼자 천천히 가면 괜찮다.",false,
+    "어지러울 땐 혼자 가지 말고 호출벨을 누르면 더 안전해요."],
+  ["🤖","챗봇 답이 이상하거나 헷갈리면 간호사에게 확인한다.",true,
+    "맞아요. 챗봇도 틀릴 수 있어요. 그리고 이름이나 주민번호 같은 개인정보는 챗봇에게 말하지 않아요."],
+  ["🆘","넘어졌는데 다친 데가 없으면 간호사에게 말하지 않아도 된다.",false,
+    "다친 데가 없어도 꼭 간호사에게 알려 주세요. 나중에 아픈 곳이 생길 수 있어요."],
+  ["🔔","호출벨을 자주 누르면 간호사에게 폐가 되니 참는 게 좋다.",false,
+    "호출벨은 언제든 눌러도 돼요. 도움을 청하는 건 부끄러운 일이 아니에요."]
+];
+const RIGHT = ["맞아요! 아주 잘 알고 계세요.","정답이에요! 잘하셨어요.","맞아요, 훌륭해요!"];
+function runQuiz(){
+  bubble('me', LABEL.quiz);
+  bubble('bot', `오늘 배운 걸 ${QUIZ.length}문제로 확인해 볼게요. 맞으면 O, 틀리면 X를 눌러 주세요.`);
+  let i=0, score=0;
+  const next=()=>{
+    if(i>=QUIZ.length){ done(); return; }
+    const [ic,qtext,ans,why]=QUIZ[i];
+    const t = bubble('bot', `${i+1}번. ${qtext}`);
+    const pic=document.createElement('span'); pic.className='pic'; pic.textContent=ic; pic.setAttribute('aria-hidden','true');
+    t.before(pic);
+    const row=document.createElement('div'); row.className='ox';
+    [['O',true,'o'],['X',false,'x']].forEach(([lab,val,cls])=>{
+      const b=document.createElement('button'); b.type='button'; b.className=cls; b.textContent=lab;
+      b.setAttribute('aria-label', lab==='O'?'맞다':'틀리다');
+      b.onclick=()=>{
+        row.remove(); bubble('me', lab);
+        const ok = val===ans;
+        if(ok) score++;
+        bubble('bot', ok ? `${RIGHT[i%RIGHT.length]} ${why}` : `정답은 ${ans?'O':'X'}예요. 이렇게 하면 더 안전해요. ${why}`);
+        i++; setTimeout(next, 400);
+      };
+      row.append(b);
+    });
+    t.parentElement.append(row); scrollEnd();
+  };
+  const done=()=>{
+    const pct=Math.round(score/QUIZ.length*100);
+    const msg = pct>=80
+      ? `${QUIZ.length}문제 중 ${score}개 맞히셨어요! 아주 잘 기억하고 계세요. 오늘 배운 대로 실천하시면 넘어지지 않게 지킬 수 있어요.`
+      : `${QUIZ.length}문제 중 ${score}개 맞히셨어요. 괜찮아요, 처음엔 다 헷갈려요. 틀린 부분은 간호사와 한 번 더 같이 볼게요. 언제든 다시 풀어 보셔도 돼요.`;
+    bubble('bot', msg);
+    setTimeout(()=>runPromise(true), 900);
+    turns.push({role:'user',content:`OX 퀴즈 결과: ${QUIZ.length}문제 중 ${score}개 정답`},{role:'assistant',content:msg});
+  };
+  next();
+}
+
+/* 낙상 위험 자가점검 (미국 질병통제예방센터 노인 낙상 예방 프로그램 핵심 질문 3개) */
+/* 낙상 위험 점검 — 미국 질병통제예방센터 노인 낙상 예방 프로그램 'Stay Independent' 12문항(Rubenstein 외, 2011, 타당도 검증)을 팀이 우리말로 옮김.
+   "예" 점수 합계 4점 이상이면 넘어질 위험이 있을 수 있음. 진단이 아니라 간호사와 함께 볼 자료 */
+const CHECK = [
+  ["지난 1년 동안 넘어진 적이 있어요.",2,'fell'],
+  ["지팡이나 보행기를 쓰거나, 쓰라는 말을 들은 적이 있어요.",2,'aid'],
+  ["걸을 때 가끔 몸이 휘청거려요.",1,'bal'],
+  ["걸을 때 가구 같은 걸 붙잡고 몸을 지탱해요.",1,'bal'],
+  ["넘어질까 봐 걱정돼요.",1,'fear'],
+  ["의자에서 일어날 때 손으로 짚고 밀어야 일어나요.",1,'leg'],
+  ["턱이나 계단 한 칸 오르기가 조금 힘들어요.",1,'leg'],
+  ["화장실에 급하게 가야 할 때가 자주 있어요.",1,'toilet'],
+  ["발에 감각이 조금 무뎌졌어요.",1,'foot'],
+  ["가끔 어지럽거나 평소보다 더 피곤하게 만드는 약을 먹어요.",1,'med'],
+  ["잠이 오게 하거나 기분을 좋게 하는 약을 먹어요.",1,'med'],
+  ["자주 슬프거나 우울해요.",1,'mood']
+];
+const CHECK_REC = {
+  fell:'넘어진 적이 있으면 또 넘어지기 쉬워요. 담당 간호사와 낙상 예방 계획을 함께 세워요.',
+  aid:'지팡이나 보행기는 침대 옆 손 닿는 곳에 두고, 움직일 땐 꼭 쓰세요.',
+  bal:'몸이 휘청이면 혼자 걷지 말고 호출벨로 도움을 받으세요. 균형 운동은 간호사·물리치료사와 상의해요.',
+  fear:'걱정되는 마음도 넘어짐과 관련 있어요. 낙지와 안전한 순서를 함께 연습하면 마음이 편해져요.',
+  leg:'다리 힘이 약하면 넘어지기 쉬워요. 다리 힘 운동을 간호사와 함께 시작해 봐요.',
+  toilet:'밤에 급하게 화장실 가다 넘어지기 쉬워요. 자기 전 화장실, 밤엔 불 켜기와 호출벨, 침대 옆 소변기를 간호사에게 부탁하세요.',
+  foot:'발 감각이 무디면 미끄럽지 않고 뒤꿈치가 막힌 신발이 더 중요해요. 발도 매일 살펴요.',
+  med:'어지럽거나 졸린 약은 넘어질 위험을 높여요. 마음대로 끊지 말고 간호사·의사에게 약 검토를 부탁하세요.',
+  mood:'마음이 힘든 것도 넘어짐과 관련 있어요. 간호사에게 마음 이야기도 꼭 해 주세요.'
+};
+const CHECK_SRC = "미국 질병통제예방센터 노인 낙상 예방 프로그램 'Stay Independent' 자가 점검(Rubenstein 외, 2011) · 팀 번역";
+let lastCheck=null;
+function runCheck(){
+  bubble('me', LABEL.check);
+  const lead='열두 가지를 여쭤볼게요. 맞으면 "예", 아니면 "아니요"를 눌러 주세요.';
+  bubble('bot', lead, CHECK_SRC);
+  let i=0, score=0; const yes=[];
+  const next=()=>{
+    if(i>=CHECK.length){ finish(); return; }
+    const t = bubble('bot', `${['첫째','둘째','셋째','넷째','다섯째','여섯째','일곱째','여덟째','아홉째','열째','열한째','열두째'][i]}, ${CHECK[i][0]}`);
+    const row=document.createElement('div'); row.className='yn';
+    ['예','아니요'].forEach(a=>{
+      const b=document.createElement('button'); b.type='button'; b.className='chip'; b.textContent=a;
+      b.onclick=()=>{ row.remove(); bubble('me',a); if(a==='예'){ score+=CHECK[i][1]; yes.push(i); } i++; next(); };
+      row.append(b);
+    });
+    t.parentElement.append(row); scrollEnd();
+  };
+  const finish=()=>{
+    lastCheck={score, yes:yes.slice()};
+    const keys=[...new Set(yes.map(k=>CHECK[k][2]))];
+    let msg = score>=4
+      ? `점수는 ${score}점이에요(14점 만점). 4점 이상이라 넘어질 위험이 있을 수 있어요. 걱정하지 마세요. 아래 방법을 담당 간호사와 함께 챙기면 위험을 줄일 수 있어요.`
+      : `점수는 ${score}점이에요(14점 만점). 4점보다 낮아요. 그래도 병원은 집과 환경이 달라서 누구나 넘어질 수 있어요.`;
+    if(keys.length) msg += '\n\n어르신께 맞는 방법이에요.\n' + keys.slice(0,4).map((k,n)=>`${['첫째','둘째','셋째','넷째'][n]}, ${CHECK_REC[k]}`).join('\n');
+    else msg += '\n일어날 땐 앉아서 잠깐 쉬었다가 천천히 일어나는 것만은 꼭 지켜 주세요.';
+    msg += '\n(진단이 아니에요. 결과는 담당 간호사와 함께 봐요.)';
+    bubble('bot', msg, CHECK_SRC);
+    turns.push({role:'user',content:`낙상 위험 점검(12문항) 결과: ${score}점/14점, "예"라고 답한 항목: ${yes.map(k=>CHECK[k][0]).join(' / ')||'없음'}`},{role:'assistant',content:msg});
+  };
+  afterSpeech(next, lead);
+}
+
+/* 저장: 이 기기 브라우저에만 남는 개인 기록 */
+function load(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(_){ return d; } }
+function save(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(_){} }
+const today = new Date().toISOString().slice(0,10);
+
+/* 오늘의 실천 — 성공 경험 + 언어적 설득 */
+const MISSIONS = [
+  "자기 전에 화장실 다녀오기",
+  "순서대로 천천히 일어나기",
+  "미끄럽지 않고 뒤꿈치가 막힌 신발 신기",
+  "도움이 필요할 때 호출벨 누르기"
+];
+const PRAISE = [
+  "잘하셨어요! 이렇게 하나씩 하시면 넘어질 위험이 줄어요.",
+  "훌륭해요. 직접 해내셨으니 다음엔 더 쉬워질 거예요.",
+  "좋아요! 몸을 아끼는 아주 좋은 습관이에요.",
+  "정말 잘하셨어요. 할 수 있다는 걸 보여 주셨어요."
+];
+function runMission(){
+  bubble('me', LABEL.mission);
+  let rec = load('mission',{});
+  if(rec.date!==today) rec={date:today,done:[]};
+  const head=()=>`오늘 해 볼 작은 실천 4가지예요. 해내신 것을 눌러 주세요.\n(지금 ${rec.done.length}개 / 4개)`;
+  const t = bubble('bot', head());
+  const box=document.createElement('div'); box.className='missions';
+  MISSIONS.forEach((m,i)=>{
+    const b=document.createElement('button'); b.type='button'; b.className='chip';
+    const mark=()=>{ b.classList.add('done'); b.disabled=true; b.textContent='✓ '+m; };
+    b.textContent='○ '+m;
+    if(rec.done.includes(i)) mark();
+    b.onclick=()=>{
+      if(rec.done.includes(i)) return;
+      rec.done.push(i); save('mission',rec); mark();
+      t.textContent = head();
+      bubble('bot', rec.done.length===4
+        ? "오늘 4가지를 모두 해내셨어요! 정말 대단하세요. 내일도 이렇게 하시면 넘어지지 않고 건강하게 지내실 수 있어요."
+        : PRAISE[(rec.done.length-1)%PRAISE.length]);
+    };
+    box.append(b);
+  });
+  t.parentElement.append(box); scrollEnd();
+}
+
+/* 🤝 오늘의 약속 — 실천 의지를 스스로 고르고 말로 표현 (정의적 목표 1) */
+const PROMISES = [
+  "어지럽거나 혼자 어려우면 호출벨을 누를게요",
+  "일어날 때 앉아서 잠깐 쉬었다가 천천히 일어날게요",
+  "미끄럽지 않은 신발을 신을게요",
+  "자기 전에 화장실에 다녀올게요"
+];
+function runPromise(auto){
+  if(!auto) bubble('me', LABEL.promise);
+  const t = bubble('bot', '어르신, 오늘 하나만 약속해 볼까요? 어르신이 지킬 수 있겠다 싶은 걸 하나 골라 주세요.');
+  const box=document.createElement('div'); box.className='missions';
+  PROMISES.forEach(pm=>{
+    const b=document.createElement('button'); b.type='button'; b.className='chip'; b.textContent='🤝 '+pm;
+    b.onclick=()=>{
+      box.remove(); bubble('me', pm);
+      save('promise',{date:today,text:pm});
+      const msg=`좋아요! "${pm}" 하고 약속하셨어요. 어르신이 직접 정하신 약속이라 충분히 지키실 수 있어요. 괜찮으시면 간호사에게 소리 내어 한 번 말씀해 주세요.`;
+      bubble('bot', msg);
+      turns.push({role:'user',content:'오늘의 약속: '+pm},{role:'assistant',content:msg});
+    };
+    box.append(b);
+  });
+  t.parentElement.append(box); scrollEnd();
+}
+
+/* 낙상 걱정 점수 — 한국어판 단축형 낙상효능척도-국제형(Short FES-I, 7문항) 교육 전·후 비교
+   문항 문구: 고영지 외(2022) 논문에 실린 문구(3·5·6번)와 박기범 외(2010) 한국어판 FES-I 문구(1·2·3·7번)
+   응답: 고영지 외(2022)의 4점 척도. 합계 7~28점, 낮을수록 걱정이 적음 */
+const FES_Q = [
+  '옷 입기/벗기',
+  '목욕이나 샤워하기',
+  '의자에 앉거나 일어나기',
+  '계단 오르내리기',
+  '머리 위 또는 바닥에 있는 물건에 손을 뻗기',
+  '경사로 오르내리기',
+  '외부(친목)행사 참가위해 외출하기'
+];
+const FES_A = ['전혀 문제없다','조금 염려된다','상당히 염려된다','매우 염려된다'];
+const FES_SRC = '한국어판 단축형 낙상효능척도-국제형(고영지 외, 2022; 원척도 Kempen 외, 2008)';
+const fesSum = a => a.reduce((x,y)=>x+y,0);
+/* 낙지가 말을 다 마친 뒤에 다음으로 넘어가기 (안내 멘트가 잘리지 않게) */
+function afterSpeech(cb, text){
+  if(!TTS || !voiceOn){ setTimeout(cb, 400); return; }
+  const t0=Date.now(), maxWait=Math.max(4000,(text||'').length*200)+3000;
+  let started=false, done=false;
+  const go=()=>{ if(done) return; done=true; setTimeout(cb, 300); };
+  const tick=()=>{
+    let sp=false; try{ sp=speechSynthesis.speaking || speechSynthesis.pending; }catch(_){}
+    if(sp) started=true;
+    const el=Date.now()-t0;
+    if(started && !sp) return go();            /* 말을 다 마침 */
+    if(!started && el>2500) return go();       /* 목소리가 안 나는 기기 */
+    if(el>maxWait) return go();                /* 안전장치 */
+    setTimeout(tick, 250);
+  };
+  setTimeout(tick, 300);
+}
+function runScore(){
+  bubble('me', LABEL.score);
+  const s0 = load('fesi',{});
+  if(s0.pre && s0.post){ showScore(s0); return; }
+  const isPost = !!s0.pre;
+  const cur = [];
+  let i=0;
+  const lead = isPost ? '교육을 마치고 같은 질문을 다시 여쭤볼게요.' : '교육을 시작하기 전에 일곱 가지만 여쭤볼게요.';
+  const leadText = lead + '\n각 활동을 할 때 넘어질까 봐 얼마나 염려되시는지 골라 주세요. 지금 하지 않는 활동이면, 하신다고 생각하고 골라 주세요.';
+  bubble('bot', leadText, FES_SRC);
+  const ask1=()=>{
+    if(i>=FES_Q.length){
+      const s=load('fesi',{});
+      if(isPost){ s.post=cur; save('fesi',s); showScore(s); }
+      else { s.pre=cur; save('fesi',s);
+        bubble('bot','알려 주셔서 고마워요. 교육을 마친 뒤에 "낙상 걱정 점수"를 한 번 더 누르면 얼마나 달라졌는지 보여 드릴게요.'); }
+      return;
+    }
+    const extra = isPost ? `\n(교육 전에는 '${FES_A[s0.pre[i]-1]}'였어요)` : '';
+    const t = bubble('bot', `${['첫째','둘째','셋째','넷째','다섯째','여섯째','일곱째'][i]}, ${FES_Q[i]}${extra}`);
+    const g=document.createElement('div'); g.className='scores four';
+    FES_A.forEach((lab,k)=>{
+      const b=document.createElement('button'); b.type='button'; b.className='chip'; b.textContent=lab;
+      b.onclick=()=>{ g.remove(); bubble('me', lab); cur[i]=k+1; i++; ask1(); };
+      g.append(b);
+    });
+    t.parentElement.append(g); scrollEnd();
+  };
+  afterSpeech(ask1, leadText);      /* 안내 멘트를 다 들은 뒤 첫 문항 */
+}
+function showScore(s){
+  const pre=fesSum(s.pre), post=fesSum(s.post), d=pre-post;
+  const msg = (d>0 ? `넘어질까 하는 걱정이 ${d}점 줄었어요. 오늘 배우신 걸 충분히 해내실 수 있어요!`
+             : d===0 ? '걱정 점수는 그대로예요. 괜찮아요. 간호사와 함께 하나씩 해 보시면 마음이 차츰 편해져요.'
+             : '걱정이 조금 늘었어요. 조심하려는 마음이 생기신 거예요. 걱정되는 건 간호사에게 편하게 말씀해 주세요.')
+             + `\n(점수는 7~28점, 낮을수록 걱정이 적어요)`;
+  const t = bubble('bot', msg, FES_SRC);
+  const h=document.createElement('b'); h.textContent='낙상 걱정 점수 합계'; h.style.display='block'; h.style.marginTop='8px'; h.style.fontSize='.85em';
+  t.parentElement.append(h);
+  [['교육 전',pre,'pre'],['교육 후',post,'']].forEach(([l,v,cls])=>{
+    const r=document.createElement('div'); r.className='bar '+cls;
+    const sp=document.createElement('span'); sp.textContent=l; sp.style.minWidth='4.2em';
+    const i=document.createElement('i'); i.style.width=(v/28*100)+'%';
+    const w=document.createElement('div'); w.style.flex='1'; w.append(i);
+    const num=document.createElement('b'); num.textContent=v+'점';
+    r.append(sp,w,num); t.parentElement.append(r);
+  });
+  const det=document.createElement('small'); det.style.display='block'; det.style.marginTop='8px'; det.style.lineHeight='1.6';
+  det.textContent = FES_Q.map((q,k)=>`${q}: ${s.pre[k]} → ${s.post[k]}`).join('\n'); det.style.whiteSpace='pre-line';
+  t.parentElement.append(det);
+  const again=document.createElement('button'); again.type='button'; again.className='chip'; again.textContent='처음부터 다시 재기';
+  again.style.marginTop='10px';
+  again.onclick=()=>{ save('fesi',{}); again.remove(); bubble('bot','점수를 지웠어요. "낙상 걱정 점수"를 누르면 교육 전 점수부터 다시 잴 수 있어요.'); };
+  t.parentElement.append(again);
+  turns.push({role:'user',content:`낙상 걱정 점수(단축형 낙상효능척도, 7~28점, 낮을수록 좋음): 교육 전 ${pre} → 교육 후 ${post}`},{role:'assistant',content:msg});
+  scrollEnd();
+}
+
+/* 🎬 영상으로 배워요 (대리 경험): 팀에서 만든 낙상 예방 교육 영상 + 낙지 소개 영상 */
+const VIDEO_URL = 'fall-edu.mp4';
+const VIDS = { edu:'fall-edu.mp4', intro:'nakji-intro.mp4' };
+const VIDEO_INTRO = '영상을 크게 보여 드릴게요. 보고 싶은 영상을 골라 주세요.';
+const vidpanel=document.getElementById('vidpanel'), vid=document.getElementById('vid');
+const vidchoose=document.getElementById('vidchoose'), vidload=document.getElementById('vidload'), vidback=document.getElementById('vidback');
+let vidOpener=null, vidCur='', vidReq=0;
+/* 아이폰은 영상 파일을 조각조각 받아 오는 방식을 요구해서, 통째로 받아 기기 안의 주소로 재생 → 아이폰·갤럭시·패드 모두 동작 */
+const vidBlob={}, vidDirect={};
+function vidGet(k){
+  if(vidBlob[k]) return Promise.resolve(vidBlob[k]);
+  return fetch(VIDS[k]).then(r=>{ if(!r.ok) throw 0; return r.blob(); })
+    .then(b=>(vidBlob[k]=URL.createObjectURL(new Blob([b],{type:'video/mp4'}))));
+}
+function useDirect(){ if(!vidCur || vidDirect[vidCur]) return; vidDirect[vidCur]=true; vid.src=VIDS[vidCur]; vid.load(); }
+vid.addEventListener('error',()=>{ if(vid.src.startsWith('blob:')) useDirect(); });
+try{ vidGet('intro').catch(()=>{}); }catch(_){}       /* 짧은 소개 영상만 미리 받아 두기 (교육 영상은 고를 때 받음) */
+function vidStart(){
+  vidload.hidden=true; vid.hidden=false; vidplay.hidden=true;
+  try{ vid.currentTime=0; }catch(_){}
+  const pr=vid.play(); if(pr && pr.catch) pr.catch(()=>{ vidplay.hidden=false; });   /* 자동 재생이 막히면 큰 재생 버튼 */
+}
+function vidPick(k){
+  const my=++vidReq; vidCur=k;
+  vidchoose.hidden=true; vidback.hidden=false; vid.hidden=true; vidplay.hidden=true;
+  try{ speechSynthesis.cancel(); }catch(_){}
+  if(vidBlob[k]){ vid.src=vidBlob[k]; vid.load(); vidStart(); return; }
+  vidload.hidden=false;
+  try{
+    vidGet(k).then(u=>{ if(my!==vidReq || vidpanel.hidden) return; vid.src=u; vid.load(); vidStart(); })
+      .catch(()=>{ if(my!==vidReq || vidpanel.hidden) return; useDirect(); vidStart(); });
+  }catch(_){ useDirect(); vidStart(); }
+}
+function vidMenu(){
+  vidReq++; vid.pause(); vid.hidden=true; vidplay.hidden=true; vidload.hidden=true; vidback.hidden=true; vidchoose.hidden=false;
+  const f=vidchoose.querySelector('.vidopt'); if(f) f.focus();
+}
+vidchoose.addEventListener('click',e=>{ const b=e.target.closest('.vidopt'); if(b) vidPick(b.dataset.v); });
+vidback.onclick=vidMenu;
+const vidplay=document.getElementById('vidplay');
+vidplay.onclick=()=>{ vidplay.hidden=true; vid.play().catch(()=>{ vidplay.hidden=false; }); };
+vid.addEventListener('playing',()=>{ vidplay.hidden=true; });
+/* 📻 낙지 라디오: 낙지가 안전 한마디·마음 한마디·OX 퀴즈를 읽어 주고, 사이사이 잔잔한 음악(직접 만든 곡)을 들려줘요 */
+/* 🛡️ 낙상 예방 한마디 [내용, 근거] */
+const R_TIPS = [
+  ["일어날 땐 앉아서 잠깐 쉬었다가 천천히 일어나요.","미국 질병통제예방센터 노인 낙상 예방 프로그램 기립성 저혈압 안내"],
+  ["어지러우면 혼자 움직이지 말고 호출벨을 눌러요.","미국 보건의료연구품질청 병원 낙상 예방 지침"],
+  ["자기 전에 화장실에 다녀오면 밤에 덜 깨요.","미국 질병통제예방센터·미국 보건의료연구품질청 낙상 예방"],
+  ["밤에 움직일 땐 꼭 불을 켜요.","미국 질병통제예방센터 낙상 예방 안내문"],
+  ["미끄럽지 않고 뒤꿈치가 막힌 신발을 신어요. 슬리퍼는 벗겨지기 쉬워요.","미국 질병통제예방센터 노인 낙상 예방 프로그램 낙상 예방 안내문"],
+  ["안경과 보청기는 일어나기 전에 써요.","영국 국민보건서비스 낙상 안내"],
+  ["자주 쓰는 물건은 손 닿는 곳에 둬요.","미국 질병통제예방센터 낙상 예방 안내문"],
+  ["지팡이나 보행기는 침대 옆, 손 닿는 곳에 둬요.","미국 보건의료연구품질청 병원 낙상 예방 지침"],
+  ["바닥에 물이나 물건이 떨어져 있으면 간호사에게 알려요.","미국 보건의료연구품질청 병원 낙상 예방 지침"],
+  ["욕실에서는 손잡이를 꼭 잡고 움직여요.","미국 질병통제예방센터 낙상 예방 안내문"],
+  ["계단에서는 난간을 잡고 한 칸씩 천천히요.","미국 질병통제예방센터 낙상 예방 안내문"],
+  ["어지럽거나 졸린 약이 있으면 간호사에게 말해요. 마음대로 끊지는 마세요.","유럽노인의학회 낙상 위험 약물 목록(2021) · 미국 질병통제예방센터 노인 낙상 예방 프로그램"],
+  ["약 이름은 몰라도 괜찮아요. 약봉지를 간호사에게 보여 주세요.","미국 질병통제예방센터 노인 낙상 예방 프로그램(약 검토)"],
+  ["눈 검사는 1년에 한 번 받아요.","미국 질병통제예방센터 노인 낙상 예방 프로그램 낙상 예방 안내문"],
+  ["귀가 안 좋으면 균형도 흔들릴 수 있어요. 청력 검사도 받아요.","영국 국민보건서비스 낙상 안내"],
+  ["근력과 균형 운동은 일주일에 2번 이상, 간호사와 함께 시작해요.","영국 국민보건서비스 낙상 안내"],
+  ["태극권처럼 천천히 하는 균형 운동은 넘어지는 걸 줄여 줘요.","미국 질병통제예방센터 노인 낙상 예방 프로그램"],
+  ["넘어질까 무서워 덜 움직이면 다리 힘이 빠져서 더 위험해요.","미국 질병통제예방센터 노인 낙상 예방 프로그램"],
+  ["술은 균형을 흐트러뜨려요. 많이 드시지 않는 게 좋아요.","영국 국민보건서비스 낙상 안내"],
+  ["우유나 치즈를 챙겨 드시면 뼈가 튼튼해져요.","영국 국민보건서비스 낙상 안내"],
+  ["엉덩이 보호대는 넘어질 때 엉덩이뼈 골절을 줄이는 데 도움이 될 수 있어요.","호주 요양시설 낙상 예방 지침 2025"],
+  ["넘어졌다면 다친 데가 없어도 간호사에게 꼭 알려요.","미국 보건의료연구품질청 병원 낙상 예방 지침"],
+  ["넘어져서 못 일어나면 몸을 따뜻하게 덮고, 호출벨이나 바닥 두드리기로 알려요.","영국 국민보건서비스 낙상 안내"],
+  ["피를 묽게 하는 약을 드시면 머리를 살짝 부딪혀도 꼭 알려요.","영국 국립보건임상연구원 머리 부상 지침(2023)"],
+  ["물을 자주 드시는 것도 잊지 마세요.","영국 국민보건서비스 낙상 안내"]
+];
+/* 💪 건강 상식 [내용, 근거] */
+const R_HEALTH = [
+  ["손은 흐르는 물에 비누로 30초 이상 꼼꼼히 씻어요. 감염병을 막는 가장 쉬운 방법이에요.","질병관리청 올바른 손씻기"],
+  ["기침이 나올 땐 휴지나 옷소매로 입과 코를 가려요.","질병관리청 기침예절"],
+  ["65세 이상은 독감 예방접종을 해마다 무료로 맞을 수 있어요.","질병관리청 국가예방접종"],
+  ["65세 이상은 폐렴구균 예방접종을 평생 한 번 무료로 맞을 수 있어요.","질병관리청 국가예방접종"],
+  ["짠 음식을 줄여요. 소금은 하루 5그램, 찻숟가락 하나보다 적게가 좋아요.","세계보건기구 소금 섭취 권고"],
+  ["채소와 과일을 하루 다섯 줌 정도, 400그램 이상 드시면 좋아요.","세계보건기구 건강한 식사"],
+  ["단 음료와 과자는 조금만 드세요.","세계보건기구 당류 섭취 권고"],
+  ["어르신도 일주일에 150분 이상 몸을 움직이면 좋아요.","세계보건기구 신체활동 지침 2020"],
+  ["균형과 근력 운동은 일주일에 3일 이상이 좋아요. 간호사와 상의해서 시작해요.","세계보건기구 신체활동 지침 2020"],
+  ["오래 앉아만 있지 말고, 틈틈이 몸을 움직여요.","세계보건기구 신체활동 지침 2020"],
+  ["치매 예방 3·3·3! 즐길 것 세 가지는 운동, 골고루 먹기, 읽고 쓰기예요.","보건복지부·중앙치매센터 치매예방수칙"],
+  ["치매 예방 3·3·3! 참을 것 세 가지는 술, 담배, 머리 다치기예요.","보건복지부·중앙치매센터 치매예방수칙"],
+  ["치매 예방 3·3·3! 챙길 것 세 가지는 건강검진, 가족·친구와 소통, 치매 조기검진이에요.","보건복지부·중앙치매센터 치매예방수칙"],
+  ["담배는 끊는 게 언제나 이득이에요. 나이가 많아도 끊으면 건강이 좋아져요.","세계보건기구 금연"],
+  ["술은 줄일수록 건강에 좋아요.","세계보건기구 음주와 건강"],
+  ["이는 하루 두 번, 2분쯤 불소 치약으로 닦아요.","영국 국민보건서비스 치아 관리"],
+  ["틀니는 밤에 빼서 깨끗이 닦고, 마르지 않게 물에 담가 둬요.","영국 국민보건서비스 틀니 관리"],
+  ["변비가 있으면 채소·과일 같은 섬유질과 물을 충분히 드시고 조금씩 움직여요.","영국 국민보건서비스 변비 안내"],
+  ["당뇨가 있으면 매일 발을 살펴봐요. 상처나 빨간 곳이 있으면 간호사에게 알려요.","미국 질병통제예방센터 당뇨 발 관리"],
+  ["목이 마르지 않아도 물을 조금씩 자주 드세요. 나이가 들면 목마름을 덜 느껴요.","영국 국민보건서비스 수분 안내"],
+  ["더운 날엔 한낮 11시부터 3시까지 햇볕을 피하고, 물을 자주 드세요.","영국 국민보건서비스 폭염 안내"],
+  ["추운 날엔 방을 18도 이상 따뜻하게, 옷은 여러 겹 껴입어요.","영국 국민보건서비스 추위 대비 안내"],
+  ["얼굴이 한쪽으로 처지거나, 한쪽 팔에 힘이 빠지거나, 말이 어눌하면 바로 알려요. 뇌졸중일 수 있어요.","영국 국민보건서비스 뇌졸중 신호 안내"],
+  ["기분이 가라앉는 날이 2주 넘게 이어지면 간호사나 의사에게 말해요.","영국 국민보건서비스 우울 안내"]
+];
+/* 💛 마음 한마디 */
+const R_HEART = [
+  "도움을 청하는 건 부끄러운 일이 아니에요.",
+  "천천히 해도 괜찮아요. 서두르지 않아도 돼요.",
+  "오늘 하루도 잘 지내셨어요. 낙지가 곁에 있어요.",
+  "어르신은 충분히 잘하고 계세요.",
+  "무서운 마음이 들면 언제든 간호사에게 말씀하세요.",
+  "같은 걸 여러 번 물어보셔도 괜찮아요. 낙지는 늘 반가워요.",
+  "오늘 하신 작은 일 하나도 대단한 거예요.",
+  "가족과 이야기 나누는 시간이 마음에도 약이 돼요.",
+  "어르신이 살아오신 이야기는 그 자체로 귀한 보물이에요.",
+  "힘든 날도 있지요. 그런 날은 조금 쉬어 가도 괜찮아요.",
+  "어르신의 웃음이 병실을 환하게 만들어요.",
+  "오늘 물 한 잔, 미소 한 번이면 충분히 잘한 하루예요.",
+  "혼자가 아니에요. 간호사도, 낙지도 함께 있어요.",
+  "예전에 잘하시던 일, 지금도 천천히 하시면 돼요.",
+  "어르신이 계셔서 다들 든든해요.",
+  "오늘 고마웠던 일 하나를 떠올려 보세요. 마음이 따뜻해져요.",
+  "몸이 예전 같지 않아도, 어르신은 여전히 소중한 분이에요.",
+  "잘 주무시고, 잘 드시고, 천천히. 그거면 돼요."
+];
+/* ❓ 퀴즈 [그림, 문제, 정답, 설명] */
+const R_QUIZF = [
+  ["🌙","밤에 화장실 갈 때는 불을 켜는 게 좋다.",true,"어두우면 발밑이 안 보여요. 불을 켜고 다녀요."],
+  ["👓","안경은 일어난 다음에 천천히 써도 된다.",false,"일어나기 전에 써야 발밑이 잘 보여요."],
+  ["💊","어지러운 약은 스스로 끊어도 된다.",false,"마음대로 끊으면 위험해요. 간호사에게 먼저 말해요."],
+  ["🦵","넘어질까 무서우면 아예 안 움직이는 게 제일 안전하다.",false,"덜 움직이면 다리 힘이 빠져 더 위험해요. 간호사와 조금씩 움직여요."],
+  ["🤕","머리를 살짝 부딪혀도 간호사에게 알리는 게 좋다.",true,"겉으로 괜찮아 보여도 꼭 알려요."],
+  ["🛁","욕실에서는 손잡이를 잡고 움직이는 게 좋다.",true,"욕실은 미끄러워요. 손잡이를 꼭 잡아요."],
+  ["🍺","술을 마시면 넘어지기 쉬워진다.",true,"술은 균형을 흐트러뜨려요."],
+  ["🦯","지팡이는 멀리 두는 게 좋다.",false,"손 닿는 곳에 둬야 일어날 때 바로 쓸 수 있어요."]
+];
+const R_QUIZ2 = [
+  ["🧼","손은 비누로 30초 이상 씻는 게 좋다.",true,"비누로 30초 이상 꼼꼼히 씻어야 세균이 잘 없어져요."],
+  ["💉","65세 이상은 독감 예방접종을 무료로 맞을 수 있다.",true,"해마다 가을에 맞을 수 있어요."],
+  ["🧂","짠 음식은 건강과 상관없다.",false,"짠 음식은 혈압을 올려요. 소금은 하루 5그램보다 적게요."],
+  ["🦶","당뇨가 있으면 발을 매일 살펴보는 게 좋다.",true,"작은 상처도 커질 수 있어서 매일 보는 게 좋아요."],
+  ["🤧","기침할 땐 손바닥으로 가리는 게 가장 좋다.",false,"손보다 옷소매나 휴지로 가리는 게 좋아요."],
+  ["🦷","이는 하루 두 번, 2분쯤 닦는 게 좋다.",true,"불소 치약으로 하루 두 번 닦아요."],
+  ["🥤","목이 마를 때만 물을 마시면 된다.",false,"나이가 들면 목마름을 덜 느껴요. 조금씩 자주 마셔요."],
+  ["🚬","나이가 많으면 담배를 끊어도 소용없다.",false,"언제 끊어도 건강이 좋아져요."],
+  ["🗣️","얼굴 한쪽이 처지고 말이 어눌하면 바로 알려야 한다.",true,"뇌졸중일 수 있어요. 빨리 알릴수록 좋아요."],
+  ["🧠","치매 예방에는 운동, 골고루 먹기, 읽고 쓰기가 도움이 된다.",true,"치매 예방 3·3·3의 '즐길 것' 세 가지예요."]
+];
+const radiopanel=document.getElementById('radiopanel'), rtext=document.getElementById('rtext'), rlabel=document.getElementById('rlabel'), rpause=document.getElementById('rpause');
+let rOn=false, rPaused=false, rStep=0, rTimers=[], rIntervals=[], rCtx=null, rGain=null, rOpener=null, rTip=0, rHeart=0, rQuiz=0;
+let rSeq=0, rSrc=null, rCh='mix', rHealth=0, rQuiz2=0;
+const R_PLAN = { mix:['intro','fall','health','heart'], fall:['intro','fall'], health:['intro','health'], heart:['intro','heart'],
+  quiz:['intro','quiz','quiz2'], music:['intro','music'] };
+let rCurKind='';
+const R_CHNAME = { mix:'골고루', fall:'낙상 예방', health:'건강 상식', heart:'마음', quiz:'퀴즈', music:'뽕짝' };          /* rSeq: 지금 진행 중인 순서 번호. 예전 순서의 알림은 모두 무시해서 겹치지 않게 */
+const rClear=()=>{ rTimers.forEach(clearTimeout); rTimers=[]; rIntervals.forEach(clearInterval); rIntervals=[];
+  if(rSrc){ try{ rSrc.onended=null; rSrc.stop(); }catch(_){} rSrc=null; } };
+function rAudio(){
+  if(rCtx) { try{ rCtx.resume(); }catch(_){} return; }
+  try{ const AC=window.AudioContext||window.webkitAudioContext; rCtx=new AC(); rGain=rCtx.createGain(); rGain.gain.value=0.3; rGain.connect(rCtx.destination); }catch(_){}
+}
+/* 뽕짝 음악: 트로트 단음계(라·시·도·미·파) 가락 + 쿵짝 리듬 + 꺾기 (낙지 라디오용으로 직접 만든 곡, 원곡 없음) */
+/* 🎵 낙지가 만든 노래 (모두 직접 만든 곡, 원곡 없음). 0은 쉼표 */
+const R_CH = {Am:{r:45,f:52,t:[57,60,64]}, Dm:{r:50,f:45,t:[57,62,65]}, E7:{r:40,f:47,t:[56,59,62,64]},
+              C:{r:48,f:55,t:[60,64,67]}, G:{r:43,f:50,t:[59,62,67]}, F:{r:41,f:48,t:[60,65,69]}};
+/* intro: 곡마다 다른 시작 / kc: 두 번째 절에서 조 올리기(더 신나게) */
+const R_SONGS = [
+  {title:'낙지 뽕짝', q:0.33, beats:4, style:'trot', lead:'saw', intro:'brass', kc:1, bars:['Am','E7','Am','Dm','Dm','Am','E7','Am'], mel:[
+    [76,.5],[77,.5],[76,.5],[72,.5],[71,1],[69,1],[72,.5],[71,.5],[69,.5],[65,.5],[64,2],
+    [64,.5],[65,.5],[69,.5],[71,.5],[72,1],[76,1],[77,.5],[76,.5],[72,.5],[71,.5],[69,2],
+    [81,.5],[81,.5],[77,.5],[76,.5],[77,1],[76,1],[72,.5],[76,.5],[77,.5],[76,.5],[72,1],[71,1],
+    [76,.5],[72,.5],[71,.5],[69,.5],[71,1],[72,1],[71,.5],[69,.5],[65,.5],[64,.5],[69,2]]},
+  {title:'밝은 낙지 트로트', q:0.32, beats:4, style:'trot', lead:'saw', intro:'fill', kc:2, bars:['C','G','F','C','Am','F','G','C'], mel:[
+    [76,.5],[79,.5],[81,1],[79,.5],[76,.5],[74,1],[74,.5],[76,.5],[74,.5],[72,.5],[67,2],
+    [69,.5],[72,.5],[74,.5],[76,.5],[79,1],[76,1],[76,.5],[74,.5],[72,.5],[74,.5],[76,2],
+    [81,.5],[84,.5],[81,1],[79,.5],[76,.5],[79,1],[76,.5],[74,.5],[72,1],[74,.5],[76,.5],[79,1],
+    [79,.5],[76,.5],[74,.5],[72,.5],[74,2],[72,3],[0,1]]},
+  {title:'호출벨 디스코', q:0.31, beats:4, style:'disco', lead:'saw', intro:'hat', kc:2, bars:['Am','Am','Dm','E7','Am','Dm','E7','Am'], mel:[
+    [69,.5],[72,.5],[76,.5],[77,.5],[76,1],[72,1],[71,.5],[72,.5],[71,.5],[69,.5],[64,2],
+    [65,.5],[69,.5],[72,.5],[76,.5],[77,1],[76,1],[76,.5],[77,.5],[76,.5],[72,.5],[71,2],
+    [81,.5],[81,.5],[81,.5],[77,.5],[76,1],[77,1],[77,.5],[76,.5],[72,.5],[71,.5],[69,2],
+    [71,.5],[72,.5],[71,.5],[69,.5],[68,1],[71,1],[69,3],[0,1]]},
+  {title:'튼튼 다리 행진곡', q:0.31, beats:4, style:'march', lead:'square', intro:'snare', kc:0, bars:['C','G','C','G','F','C','G','C'], mel:[
+    [72,1],[72,.5],[74,.5],[76,1],[72,1],[74,1],[71,1],[67,2],
+    [72,1],[76,.5],[79,.5],[79,1],[76,1],[74,1],[76,.5],[74,.5],[71,2],
+    [77,1],[77,.5],[76,.5],[74,1],[72,1],[76,1],[79,1],[84,2],
+    [83,.5],[81,.5],[79,1],[77,.5],[76,.5],[74,1],[72,2],[72,1],[0,1]]},
+  {title:'樂디오 왈츠', q:0.34, beats:3, style:'waltz', lead:'tri', intro:'riff', kc:0, bars:['C','C','F','C','Am','Dm','G','C'], mel:[
+    [72,2],[76,1],[79,2],[76,1],[77,1],[76,1],[74,1],[72,3],
+    [76,2],[72,1],[74,2],[77,1],[76,1],[74,1],[71,1],[72,3]]},
+  {title:'어깨춤 트로트', q:0.30, beats:4, style:'trot', lead:'saw', intro:'clap', kc:1, bars:['Am','Am','Dm','Am','E7','E7','Am','Am'], mel:[
+    [69,.5],[69,.5],[72,.5],[76,.5],[77,1],[76,1],[76,.5],[72,.5],[71,.5],[69,.5],[71,1],[72,1],
+    [77,.5],[77,.5],[76,.5],[77,.5],[81,1],[77,1],[76,.5],[72,.5],[76,.5],[77,.5],[76,2],
+    [71,.5],[72,.5],[71,.5],[68,.5],[64,1],[68,1],[71,1],[72,.5],[71,.5],[69,.5],[68,.5],[64,1],
+    [69,.5],[72,.5],[76,.5],[81,.5],[77,1],[76,1],[72,.5],[71,.5],[69,1],[69,1],[0,1]]},
+  {title:'흥부자 낙지', q:0.30, beats:4, style:'trot', lead:'saw', intro:'pickup', kc:2, bars:['C','C','F','C','G','G','C','C'], mel:[
+    [72,.5],[74,.5],[76,.5],[79,.5],[81,1],[79,1],[76,.5],[79,.5],[76,.5],[74,.5],[72,2],
+    [69,.5],[72,.5],[74,.5],[72,.5],[69,1],[72,1],[76,.5],[76,.5],[79,.5],[76,.5],[74,1],[72,1],
+    [74,.5],[76,.5],[79,.5],[81,.5],[79,1],[76,1],[74,.5],[72,.5],[74,.5],[76,.5],[74,2],
+    [79,.5],[81,.5],[84,1],[81,.5],[79,.5],[76,1],[74,.5],[76,.5],[72,1],[72,1],[0,1]]},
+  {title:'디스코 낙지 2', q:0.30, beats:4, style:'disco', lead:'saw', intro:'bass', kc:2, bars:['Dm','Am','Dm','E7','Dm','Am','E7','Am'], mel:[
+    [74,.5],[77,.5],[81,.5],[77,.5],[76,1],[74,1],[72,.5],[76,.5],[72,.5],[71,.5],[69,2],
+    [77,.5],[77,.5],[77,.5],[76,.5],[77,1],[81,1],[80,.5],[81,.5],[80,.5],[76,.5],[71,2],
+    [74,.5],[77,.5],[81,.5],[84,.5],[81,1],[77,1],[76,.5],[77,.5],[76,.5],[72,.5],[69,2],
+    [71,.5],[72,.5],[74,.5],[76,.5],[80,1],[76,1],[81,2],[69,1],[0,1]]},
+  {title:'손뼉 짝짝 폴카', q:0.28, beats:4, style:'polka', lead:'square', intro:'count', kc:2, bars:['C','G','G','C','C','F','G','C'], mel:[
+    [67,.5],[72,.5],[72,.5],[72,.5],[76,.5],[76,.5],[76,1],[74,.5],[74,.5],[74,.5],[76,.5],[74,.5],[71,.5],[67,1],
+    [71,.5],[74,.5],[79,.5],[74,.5],[71,.5],[74,.5],[79,1],[76,.5],[74,.5],[72,1],[72,2],
+    [76,.5],[79,.5],[84,.5],[79,.5],[76,.5],[79,.5],[84,1],[81,.5],[79,.5],[77,.5],[76,.5],[77,1],[81,1],
+    [79,.5],[77,.5],[76,.5],[74,.5],[71,1],[74,1],[72,1],[67,.5],[71,.5],[72,1],[0,1]]},
+  {title:'樂디오 피날레', q:0.29, beats:4, style:'trot', lead:'saw', intro:'big', kc:2, bars:['Am','Dm','E7','Am','F','Dm','E7','Am'], mel:[
+    [81,1],[76,.5],[77,.5],[76,1],[72,1],[74,.5],[77,.5],[74,.5],[72,.5],[69,2],
+    [71,.5],[72,.5],[71,.5],[68,.5],[71,1],[76,1],[72,.5],[71,.5],[69,.5],[71,.5],[69,2],
+    [77,.5],[81,.5],[84,1],[81,.5],[77,.5],[76,1],[77,.5],[76,.5],[74,.5],[72,.5],[74,1],[77,1],
+    [76,1],[80,.5],[76,.5],[71,1],[68,1],[69,3],[0,1]]}
+];
+let rSongIdx=0, rLastSong=null;
+const R_TEMPO = 1.18;   /* 빠르기 조절: 1보다 크면 느려져요 (어르신이 앉아서 즐기기 좋은 속도) */
+function rCompose(ctx, dest, song){
+  const q=song.q*R_TEMPO, B=song.beats, t0=ctx.currentTime+0.15; let noiseBuf=null;
+  const hz=m=>440*Math.pow(2,(m-69)/12);
+  const tone=(m,at,len,type,vol,cut)=>{
+    const o=ctx.createOscillator(), g=ctx.createGain(), f=ctx.createBiquadFilter();
+    o.type=type; o.frequency.value=hz(m); f.type='lowpass'; f.frequency.value=cut||3000;
+    g.gain.setValueAtTime(0.0001,at); g.gain.exponentialRampToValueAtTime(vol,at+0.015); g.gain.exponentialRampToValueAtTime(0.0001,at+len);
+    o.connect(f).connect(g).connect(dest); o.start(at); o.stop(at+len+0.05);
+  };
+  const noise=()=>{ if(!noiseBuf){ noiseBuf=ctx.createBuffer(1,ctx.sampleRate*0.3,ctx.sampleRate); const d=noiseBuf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1; } const n=ctx.createBufferSource(); n.buffer=noiseBuf; return n; };
+  const hit=(at,hp,vol,len)=>{ const n=noise(), g=ctx.createGain(), f=ctx.createBiquadFilter(); f.type='highpass'; f.frequency.value=hp;
+    g.gain.setValueAtTime(vol,at); g.gain.exponentialRampToValueAtTime(0.0001,at+len); n.connect(f).connect(g).connect(dest); n.start(at); n.stop(at+len+0.02); };
+  const kick=(at,v)=>{ const o=ctx.createOscillator(), g=ctx.createGain(); o.frequency.setValueAtTime(150,at); o.frequency.exponentialRampToValueAtTime(45,at+0.12);
+    g.gain.setValueAtTime(v||1,at); g.gain.exponentialRampToValueAtTime(0.0001,at+0.18); o.connect(g).connect(dest); o.start(at); o.stop(at+0.2); };
+  const clap=at=>{ hit(at,1200,0.45,0.1); hit(at+0.012,1200,0.3,0.08); };
+  const lead=(m,prev,at,len)=>{
+    const o=ctx.createOscillator(), g=ctx.createGain(), f=ctx.createBiquadFilter();
+    o.type = song.lead==='saw'?'sawtooth':song.lead==='square'?'square':'triangle';
+    f.type='lowpass'; f.frequency.value= song.lead==='tri'?4000:2800; f.Q.value=2;
+    const slide = song.style==='trot'||song.style==='disco';                 /* 뽕짝은 꺾기 */
+    const from = slide ? (prev ? hz(prev) : hz(m)*0.94) : hz(m);
+    o.frequency.setValueAtTime(from, at); o.frequency.exponentialRampToValueAtTime(hz(m), at+(slide?0.07:0.01));
+    if(len>0.5){ const l=ctx.createOscillator(), lg=ctx.createGain(); l.frequency.value=6; lg.gain.setValueAtTime(0,at); lg.gain.linearRampToValueAtTime(hz(m)*(slide?0.018:0.008),at+len*0.6);
+      l.connect(lg).connect(o.frequency); l.start(at); l.stop(at+len); }
+    const v = song.lead==='tri'?0.22:0.13;
+    g.gain.setValueAtTime(0.0001,at); g.gain.exponentialRampToValueAtTime(v,at+0.02); g.gain.setValueAtTime(v,at+len*0.75); g.gain.exponentialRampToValueAtTime(0.0001,at+len*0.98);
+    o.connect(f).connect(g).connect(dest); o.start(at); o.stop(at+len);
+  };
+  const crash=at=>{ const n=noise(), g=ctx.createGain(), f=ctx.createBiquadFilter(); f.type='highpass'; f.frequency.value=5000;
+    g.gain.setValueAtTime(0.28,at); g.gain.exponentialRampToValueAtTime(0.0001,at+1.2); n.loop=true; n.connect(f).connect(g).connect(dest); n.start(at); n.stop(at+1.25); };
+  /* 곡마다 다른 시작 (1~2마디) */
+  const ib = song.intro==='big' ? 2 : 1;
+  const ch0 = R_CH[song.bars[0]];
+  const IN = {
+    brass:()=>{ [0,1,2,2.5,3].forEach((x,i)=>{ const at=t0+x*q; ch0.t.forEach(m=>tone(m+12,at,i<2?q*0.8:q*0.4,'sawtooth',0.07,2600)); kick(at); }); },
+    fill:()=>{ for(let k=0;k<16;k++){ const at=t0+k*q/4; hit(at,1500,0.12+k*0.02,0.08); } kick(t0); },
+    hat:()=>{ for(let k=0;k<16;k++){ hit(t0+k*q/4,7000,0.04+k*0.012,0.04); } kick(t0+2*q); kick(t0+3*q); },
+    snare:()=>{ [0,.25,.5,1,1.25,1.5,2,2.5,3,3.25,3.5,3.75].forEach(x=>hit(t0+x*q,1800,0.3,0.08)); },
+    riff:()=>{ [0,1,2].forEach(k=>tone([ch0.r,ch0.f,ch0.r+12][k],t0+k*q,q*0.9,'triangle',0.5,900)); },
+    clap:()=>{ [0,1,2,2.5,3].forEach(x=>clap(t0+x*q)); },
+    pickup:()=>{ const tail=song.mel.slice(-6).filter(([m])=>m); let t=t0; tail.slice(0,4).forEach(([m])=>{ lead(m,null,t,q); kick(t); t+=q; }); },
+    bass:()=>{ [0,.5,1,1.5,2,2.5,3,3.5].forEach((x,k)=>{ tone(k%2?ch0.r+12:ch0.r,t0+x*q,q*0.45,'sawtooth',0.2,600); }); [0,1,2,3].forEach(x=>kick(t0+x*q)); },
+    count:()=>{ [0,2].forEach(x=>kick(t0+x*q)); [1,3].forEach(x=>{ clap(t0+x*q); ch0.t.forEach(m=>tone(m,t0+x*q,q*0.3,'square',0.06,2200)); }); },
+    big:()=>{ for(let k=0;k<8;k++){ const at=t0+k*q/2; hit(at,1500,0.15+k*0.03,0.08); } [4,5,6,6.5,7].forEach((x,i)=>{ const at=t0+x*q; ch0.t.forEach(m=>tone(m+12,at,q*0.6,'sawtooth',0.07,2600)); kick(at); }); }
+  };
+  (IN[song.intro]||IN.count)();
+  const start=t0+ib*B*q, rounds=2, barLen=B*q;
+  for(let r=0;r<rounds;r++){
+    const base=start+r*song.bars.length*barLen;
+    const tr = r===1 ? (song.kc||0) : 0;                                      /* 두 번째 절은 조를 올려 더 신나게 */
+    crash(base);
+    song.bars.forEach((c,bar)=>{
+      const c0=R_CH[c], ch={r:c0.r+tr, f:c0.f+tr, t:c0.t.map(m=>m+tr)};
+      if(bar===4 && song.style!=='waltz') crash(base+bar*barLen);
+      for(let beat=0;beat<B;beat++){
+        const at=base+bar*barLen+beat*q;
+        if(song.style==='waltz'){                                              /* 쿵-짝-짝 */
+          if(beat===0){ kick(at,0.7); tone(ch.r,at,q*0.9,'triangle',0.5,700); }
+          else { ch.t.forEach(m=>tone(m,at,q*0.45,'triangle',0.05,2400)); hit(at,7000,0.08,0.04); }
+        } else if(song.style==='disco'){                                       /* 쿵쿵쿵쿵 + 짝 */
+          kick(at); if(beat%2===1) clap(at);
+          tone(ch.r,at,q*0.45,'sawtooth',0.18,600); tone(ch.r+12,at+q/2,q*0.45,'sawtooth',0.14,600);
+          hit(at+q/2,6000,0.16,0.09);
+        } else if(song.style==='march'){                                       /* 행진 */
+          if(beat%2===0){ kick(at); tone(beat===0?ch.r:ch.f,at,q*0.8,'triangle',0.5,700); }
+          else { hit(at,1800,0.35,0.12); ch.t.forEach(m=>tone(m,at,q*0.35,'square',0.05,2200)); }
+          hit(at+q/2,7000,0.08,0.03);
+        } else {                                                               /* 뽕짝·폴카 쿵짝 */
+          if(beat%2===0){ kick(at); tone(beat===0?ch.r:ch.f,at,q*0.85,'triangle',0.55,700); }
+          else { clap(at); ch.t.forEach(m=>tone(m,at,q*0.4,'square',0.06,2200)); }
+          hit(at+q/2,7000,0.12,0.04);
+        }
+      }
+    });
+    let t=base, prev=null;
+    song.mel.forEach(([m,l])=>{ if(m){ lead(m+tr,prev,t,l*q); tone(m+tr+12,t,l*q*0.5,'sine',0.035); prev=m+tr; } t+=l*q; });
+  }
+  crash(start + rounds*song.bars.length*barLen);                              /* 끝 '짠' */
+  return start + rounds*song.bars.length*barLen + 1.3;
+}
+function rSongLen(song){ return song.q*R_TEMPO*song.beats*((song.intro==='big'?2:1)+2*song.bars.length)+1.8; }
+const rSongBufs=[], rSongPs=[];
+/* 곡을 미리 한 번 녹음해 둬요. 그러면 '재생이 끝났다'를 정확히 알 수 있어 노래 중간에 넘어가지 않아요 */
+function rPrepareSong(i){
+  i = (i||0) % R_SONGS.length;
+  if(rSongPs[i]) return rSongPs[i];
+  const OAC=window.OfflineAudioContext||window.webkitOfflineAudioContext;
+  if(!OAC) return (rSongPs[i]=Promise.resolve(null));
+  rSongPs[i]=new Promise(res=>{
+    try{
+      const sr=44100, song=R_SONGS[i], ctx=new OAC(1, Math.ceil(sr*rSongLen(song)), sr);
+      const g=ctx.createGain(); g.gain.value=0.45; g.connect(ctx.destination);
+      rCompose(ctx, g, song);
+      let got=false; const fin=b=>{ if(got) return; got=true; rSongBufs[i]=b||null; res(rSongBufs[i]); };
+      ctx.oncomplete=e=>fin(e.renderedBuffer);
+      const r=ctx.startRendering(); if(r && r.then) r.then(fin).catch(()=>fin(null));
+      setTimeout(()=>fin(null), 20000);
+    }catch(_){ res(null); }
+  });
+  return rSongPs[i];
+}
+function rMusic(done){
+  rAudio();
+  try{ speechSynthesis.cancel(); }catch(_){}
+  if(!rCtx){ rTimers.push(setTimeout(done, 1000)); return; }
+  const my=rSeq, idx=rSongIdx%R_SONGS.length;
+  rLastSong=idx; document.getElementById('rreplay').hidden=false;   /* 방금 노래를 다시 들을 수 있게 */
+  const next=()=>{ rSongIdx++; rPrepareSong(rSongIdx); done(); };   /* 다음 곡 미리 녹음 */
+  rPrepareSong(idx).then(buf=>{
+    if(my!==rSeq || !rOn || rPaused || !rCtx) return;
+    const play=()=>{
+      if(my!==rSeq || !rOn || rPaused || !rCtx) return;
+      if(buf){
+        const src=rCtx.createBufferSource(); src.buffer=buf; src.connect(rCtx.destination);
+        rSrc=src;
+        src.onended=()=>{ if(my===rSeq && rSrc===src){ rSrc=null; next(); } };   /* 노래가 실제로 끝나면 넘어가기 */
+        src.start();
+        rTimers.push(setTimeout(()=>{ if(my===rSeq && rSrc===src){ rSrc=null; next(); } }, (buf.duration+20)*1000));
+      } else {
+        const endAt=rCompose(rCtx, rGain, R_SONGS[idx]);
+        const chk=setInterval(()=>{ if(my!==rSeq){ clearInterval(chk); return; } if(rCtx && rCtx.currentTime>=endAt){ clearInterval(chk); next(); } }, 250);
+        rIntervals.push(chk);
+      }
+    };
+    if(rCtx.state==='running') play(); else { let ok=false; const go=()=>{ if(!ok){ ok=true; play(); } }; rCtx.resume().then(go).catch(go); rTimers.push(setTimeout(go,1500)); }
+  });
+}
+function rSpeak(text, done){
+  /* 말이 끝났는지는 '끝났다는 신호'만 믿지 않고, 실제로 말하는 중인지 계속 확인해서 다 끝난 뒤에 넘어가요 */
+  let fin=false; const t0=Date.now();
+  const minShow=Math.max(3000, text.length*120);            /* 글을 읽을 최소 시간 */
+  const end=()=>{ if(fin) return; fin=true; clearInterval(poll); const left=minShow-(Date.now()-t0); left>0 ? rTimers.push(setTimeout(done,left)) : done(); };
+  let started=false, quiet=0, poll=null;
+  if(!TTS){ rTimers.push(setTimeout(end, minShow)); return; }
+  try{
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text.replace(/[•✓○→]/g,' '));
+    u.lang='ko-KR'; if(koVoice) u.voice=koVoice; u.rate=0.85; u.volume=1;
+    u.onstart=()=>{ started=true; };
+    const sq=rSeq; rTimers.push(setTimeout(()=>{ if(sq===rSeq){ try{ speechSynthesis.speak(u); }catch(_){} } }, 120));  /* 앞 말을 멈춘 직후 바로 말하면 잘리는 기기가 있어 잠깐 쉬고 */
+  }catch(_){}
+  const mySeq=rSeq;
+  poll=setInterval(()=>{
+    if(fin || !rOn || rPaused || mySeq!==rSeq){ clearInterval(poll); return; }
+    const speaking = speechSynthesis.speaking || speechSynthesis.pending;
+    if(speaking){ started=true; quiet=0; return; }
+    if(started){ if(++quiet>=3) end(); }                        /* 0.9초 동안 조용하면 다 말한 것 */
+    else if(Date.now()-t0>3500){ try{ speechSynthesis.cancel(); }catch(_){} end(); }   /* 목소리가 아예 안 나는 기기: 늦게 튀어나오지 않게 취소 */
+  }, 300);
+  rIntervals.push(poll);
+  rTimers.push(setTimeout(end, text.length*350+10000));        /* 혹시 모를 멈춤 대비 */
+}
+function rShow(label, text, src){ rlabel.textContent=label; rtext.textContent=text; document.getElementById('rsrc').textContent = src ? '근거: '+src : ''; }
+function rNext(){
+  if(!rOn || rPaused) return;
+  rClear();
+  const my=++rSeq;
+  const plan = R_PLAN[rCh];
+  let kind = plan[rStep++ % plan.length];
+  if(kind==='intro' && rStep>plan.length) kind = plan[rStep++ % plan.length];   /* 인사는 채널 처음에만 */
+  rCurKind=kind;
+  const go=()=>{ if(my===rSeq && rOn && !rPaused) rNext(); };   /* 지금 순서의 알림만 다음으로 넘김 */
+  const quizSeg=(item, label)=>{
+    const [ic,q,ans,why]=item;
+    rShow(label, ic+' '+q+'\n맞을까요, 틀릴까요?');
+    rSpeak(q+' 맞을까요, 틀릴까요?', ()=>{
+      if(my!==rSeq || !rOn || rPaused) return;
+      rTimers.push(setTimeout(()=>{
+        if(my!==rSeq || !rOn || rPaused) return;
+        const a=(ans?'정답은 O, 맞아요! ':'정답은 X, 틀려요! ')+why;
+        rShow(label+' 정답', a); rSpeak(a, go);
+      }, 3000));
+    });
+  };
+  if(kind==='intro'){
+    if(rCh==='mix'){ rShow('ON AIR · DJ 락','안녕하세요! 낙지 라디오, 줄여서 樂디오입니다.\n(樂: 즐거울 락) 저는 디제이 락이에요.\n어르신, 편안히 들어 보세요.');
+      rSpeak('안녕하세요! 낙지 라디오, 줄여서 락디오입니다. 즐거울 락 자를 써요. 저는 디제이 락이에요. 어르신, 편안히 들어 보세요.', go); }
+    else if(rCh==='music'){ const t='樂디오 뽕짝 채널이에요!\n낙지가 만든 노래 '+R_SONGS.length+'곡을 차례로 들려 드릴게요.'; rShow('ON AIR · DJ 락', t); rSpeak('락디오 뽕짝 채널이에요! 낙지가 만든 노래 '+R_SONGS.length+'곡을 차례로 들려 드릴게요.', go); }
+    else { const t='樂디오 '+R_CHNAME[rCh]+' 채널이에요!'; rShow('ON AIR · DJ 락', t); rSpeak('락디오 '+R_CHNAME[rCh]+' 채널이에요!', go); }
+  }
+  else if(kind==='fall'){ const [t,src]=R_TIPS[rTip++%R_TIPS.length]; rShow('오늘의 안전 한마디', t, src); rSpeak(t, go); }
+  else if(kind==='health'){ const [t,src]=R_HEALTH[rHealth++%R_HEALTH.length]; rShow('건강 상식', t, src); rSpeak(t, go); }
+  else if(kind==='heart'){ const t=R_HEART[rHeart++%R_HEART.length]; rShow('마음 한마디', t); rSpeak(t, go); }
+  else if(kind==='music'){ const sg=R_SONGS[rSongIdx%R_SONGS.length]; rShow('🎵 '+(rSongIdx%R_SONGS.length+1)+'곡 · '+sg.title, '앉은 채로 손뼉 치며 들어 봐요!'); try{ speechSynthesis.cancel(); }catch(_){} rMusic(go); }
+  else if(kind==='quiz'){ const all=QUIZ.concat(R_QUIZF); quizSeg(all[rQuiz++%all.length], '낙상 OX 퀴즈'); }
+  else if(kind==='quiz2'){ quizSeg(R_QUIZ2[rQuiz2++%R_QUIZ2.length], '건강 OX 퀴즈'); }
+}
+/* 채널 바꾸기 */
+document.getElementById('rch').addEventListener('click',e=>{
+  const b=e.target.closest('.rchb'); if(!b) return;
+  rCh=b.dataset.ch; rStep=0; if(rCh==='music') rPrepareSong(rSongIdx);
+  document.querySelectorAll('.rchb').forEach(x=>x.classList.toggle('on', x===b));
+  rSeq++; rClear(); try{ speechSynthesis.cancel(); }catch(_){}
+  rPaused=false; rpause.textContent='⏸ 잠시 멈춤'; radiopanel.classList.add('playing');
+  rAudio(); rNext();
+});
+function openRadio(btn){
+  if(typeof closeHwatu==='function') closeHwatu();
+  rOpener=btn||null;
+  try{ speechSynthesis.cancel(); }catch(_){}
+  rAudio();                                         /* 누르는 순간 소리 장치 켜기 (갤럭시·아이폰) */
+  radiopanel.hidden=false; radiopanel.classList.add('playing');
+  rOn=true; rPaused=false; rpause.textContent='⏸ 잠시 멈춤';
+  document.getElementById('radioclose').focus();
+  rNext();
+}
+function stopRadio(){
+  rOn=false; rSeq++; rClear(); radiopanel.classList.remove('playing');
+  try{ speechSynthesis.cancel(); }catch(_){}
+  try{ rCtx && rCtx.close(); }catch(_){} rCtx=null; rGain=null;
+}
+function closeRadio(){ stopRadio(); radiopanel.hidden=true; if(rOpener) rOpener.focus(); }
+document.getElementById('radioclose').onclick=closeRadio;
+rpause.onclick=()=>{
+  if(!rPaused){ rPaused=true; rSeq++; rClear(); try{ speechSynthesis.cancel(); }catch(_){} try{ rCtx&&rCtx.suspend(); }catch(_){}
+    radiopanel.classList.remove('playing'); rpause.textContent='▶ 다시 듣기'; }
+  else { rPaused=false; rAudio(); radiopanel.classList.add('playing'); rpause.textContent='⏸ 잠시 멈춤'; rStep=Math.max(0,rStep-1); rNext(); }
+};
+/* 🔁 방금(또는 지금) 나온 뽕짝을 처음부터 다시 */
+document.getElementById('rreplay').onclick=()=>{
+  if(rLastSong==null) return;
+  rSongIdx=rLastSong;
+  const my=++rSeq; rClear(); rPaused=false; rpause.textContent='⏸ 잠시 멈춤'; radiopanel.classList.add('playing');
+  try{ speechSynthesis.cancel(); }catch(_){} if(rCtx){ try{ rCtx.close(); }catch(_){} rCtx=null; rGain=null; } rAudio();
+  rCurKind='music';
+  const sg=R_SONGS[rSongIdx%R_SONGS.length];
+  rShow('🎵 '+(rSongIdx%R_SONGS.length+1)+'곡 · '+sg.title+' (다시 듣기)', '앉은 채로 손뼉 치며 들어 봐요!');
+  rMusic(()=>{ if(my===rSeq && rOn && !rPaused) rNext(); });
+};
+document.getElementById('rnext').onclick=()=>{ if(rCurKind==='music'){ rSongIdx++; rPrepareSong(rSongIdx); } rSeq++; rClear(); rPaused=false; rpause.textContent='⏸ 잠시 멈춤'; radiopanel.classList.add('playing');
+  try{ speechSynthesis.cancel(); }catch(_){} if(rCtx){ try{ rCtx.close(); }catch(_){} rCtx=null; rGain=null; } rAudio(); rNext(); };
+
+/* 🎴 낙지 화투 — 짝 맞추기: 같은 달 두 장을 찾으면 낙상 예방 한마디를 들려줘요 (그림은 직접 만든 단순한 그림) */
+const HW_ICON = {"bell": "<svg viewBox=\"0 0 48 48\" fill=\"none\" stroke=\"#1b1b1b\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"15\" y=\"5\" width=\"18\" height=\"28\" rx=\"6\" fill=\"#f3efe6\"/><circle cx=\"24\" cy=\"16\" r=\"6\" fill=\"#e5483b\"/><path d=\"M19 27h10\"/><path d=\"M24 33c0 6 4 6 8 8s4 4 2 5\"/></svg>", "rail": "<svg viewBox=\"0 0 48 48\" fill=\"none\" stroke=\"#1b1b1b\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 34h38M8 34v8M40 34v8\" /><rect x=\"7\" y=\"26\" width=\"34\" height=\"8\" rx=\"2\" fill=\"#f3efe6\"/><rect x=\"12\" y=\"10\" width=\"24\" height=\"12\" rx=\"3\" fill=\"#cfe6e3\"/><path d=\"M18 10v12M24 10v12M30 10v12\"/><path d=\"M14 22v4M34 22v4\"/></svg>", "shoe": "<svg viewBox=\"0 0 48 48\" fill=\"none\" stroke=\"#1b1b1b\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M6 30c0-6 2-12 6-14l6 6c4 2 10 2 14 3 6 1 10 3 10 7v4H6z\" fill=\"#7fb7e8\"/><path d=\"M6 34h36\"/><path d=\"M18 22l3-3M22 24l3-3\"/></svg>", "glass": "<svg viewBox=\"0 0 48 48\" fill=\"none\" stroke=\"#1b1b1b\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"14\" cy=\"27\" r=\"8\" fill=\"#e8f3fb\"/><circle cx=\"34\" cy=\"27\" r=\"8\" fill=\"#e8f3fb\"/><path d=\"M22 26c1-2 3-2 4 0\"/><path d=\"M6 25l-2-8M42 25l2-8\"/></svg>", "bulb": "<svg viewBox=\"0 0 48 48\" fill=\"none\" stroke=\"#1b1b1b\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M24 6a12 12 0 0 0-7 21.7V32h14v-4.3A12 12 0 0 0 24 6z\" fill=\"#ffd84d\"/><path d=\"M18 37h12M20 42h8\"/><path d=\"M8 10l3 2M40 10l-3 2M24 1v2\"/></svg>", "walker": "<svg viewBox=\"0 0 48 48\" fill=\"none\" stroke=\"#1b1b1b\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M14 8h20M14 8v32M34 8v32\" /><path d=\"M14 22h20\"/><circle cx=\"14\" cy=\"42\" r=\"3\" fill=\"#9aa5a3\"/><circle cx=\"34\" cy=\"42\" r=\"3\" fill=\"#9aa5a3\"/><rect x=\"11\" y=\"6\" width=\"6\" height=\"7\" rx=\"2\" fill=\"#7fb7e8\"/><rect x=\"31\" y=\"6\" width=\"6\" height=\"7\" rx=\"2\" fill=\"#7fb7e8\"/></svg>", "pill": "<svg viewBox=\"0 0 48 48\" fill=\"none\" stroke=\"#1b1b1b\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"6\" y=\"18\" width=\"36\" height=\"13\" rx=\"6.5\" transform=\"rotate(-30 24 24)\" fill=\"#fff\"/><path d=\"M20 15.5l7.5 13\" /><path d=\"M6.4 31.6c-.6-1.6 0 0 0 0\" /><rect x=\"6\" y=\"18\" width=\"18\" height=\"13\" rx=\"6.5\" transform=\"rotate(-30 24 24)\" fill=\"#e5483b\" stroke=\"none\" opacity=\".85\"/></svg>", "toilet": "<svg viewBox=\"0 0 48 48\" fill=\"none\" stroke=\"#1b1b1b\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"10\" y=\"6\" width=\"12\" height=\"16\" rx=\"2\" fill=\"#f3efe6\"/><path d=\"M8 22h30c0 8-5 12-11 13l2 7H15l2-7c-5-2-9-6-9-13z\" fill=\"#fff\"/><path d=\"M36 7v2M40 5v2\" /><path d=\"M38 12a3 3 0 0 0 0-5\"/></svg>", "rise": "<svg viewBox=\"0 0 48 48\" fill=\"none\" stroke=\"#1b1b1b\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M10 42V24h16v18M10 32h16\" /><path d=\"M10 24V10\" /><path d=\"M36 40V14\" /><path d=\"M30 20l6-6 6 6\"/></svg>", "wet": "<svg viewBox=\"0 0 48 48\" fill=\"none\" stroke=\"#1b1b1b\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M24 6c6 8 10 13 10 18a10 10 0 0 1-20 0c0-5 4-10 10-18z\" fill=\"#7fb7e8\"/><path d=\"M4 40c4-3 8 3 12 0s8 3 12 0 8 3 12 0 4 0 4 0\"/></svg>"};
+const HW = [["bell", "호출벨", "어지럽거나 혼자 움직이기 어려우면 호출벨을 눌러요.", "미국 보건의료연구품질청 병원 낙상 예방 지침"], ["rail", "침대 난간", "침대 난간을 넘어서 내려오면 더 크게 다칠 수 있어요. 내려오실 땐 호출벨로 간호사를 불러요.", "미국 보건의료연구품질청 병원 낙상 예방 지침"], ["shoe", "미끄럼 방지 신발", "미끄럽지 않고 뒤꿈치가 막힌 신발을 신어요. 슬리퍼는 벗겨지기 쉬워요.", "미국 질병통제예방센터 낙상 예방 안내문"], ["glass", "안경", "안경과 보청기는 일어나기 전에 써요.", "영국 국민보건서비스 낙상 안내"], ["bulb", "불 켜기", "밤에 움직일 땐 꼭 불을 켜요.", "미국 질병통제예방센터 낙상 예방 안내문"], ["walker", "보행기", "지팡이나 보행기는 침대 옆, 손 닿는 곳에 둬요.", "미국 보건의료연구품질청 병원 낙상 예방 지침"], ["pill", "약 확인", "어지럽거나 졸린 약이 있으면 간호사에게 말해요. 마음대로 끊지는 마세요.", "유럽노인의학회 낙상 위험 약물 목록(2021) · 미국 질병통제예방센터 노인 낙상 예방 프로그램"], ["toilet", "자기 전 화장실", "자기 전에 화장실에 다녀오면 밤에 덜 깨요.", "미국 질병통제예방센터·미국 보건의료연구품질청 낙상 예방"], ["rise", "천천히 일어나기", "일어날 땐 앉아서 잠깐 쉬었다가 천천히 일어나요.", "미국 질병통제예방센터 노인 낙상 예방 프로그램 기립성 저혈압 안내"], ["wet", "젖은 바닥 조심", "바닥에 물이나 물건이 떨어져 있으면 간호사에게 알려요.", "미국 보건의료연구품질청 병원 낙상 예방 지침"]];
+const hwpanel=document.getElementById('hwpanel'), hwgrid=document.getElementById('hwgrid'), hwmsg=document.getElementById('hwmsg'), hwsrc=document.getElementById('hwsrc');
+let hwFirst=null, hwLock=false, hwFound=0, hwPairs=8, hwTries=0, hwOpener=null, hwTimer=null;
+const hwBack='<svg viewBox="0 0 120 120" aria-hidden="true"><use href="#nakji"/></svg>';
+function hwShuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function hwSay(t){ hwmsg.textContent=t; say(t, false); }
+function hwDeal(n){
+  hwPairs=n+1; hwFirst=null; hwLock=false; hwFound=0; hwTries=0; clearTimeout(hwTimer);
+  hwsrc.textContent='';
+  const picks=hwShuffle([...HW.keys()]).slice(0,n);
+  const deck=hwShuffle(picks.concat(picks).concat(['bonus','bonus']));      /* 낙상 예방 짝 + 보너스 짝 */
+  hwgrid.className='hwgrid n'+deck.length;
+  hwgrid.innerHTML='';
+  deck.forEach((m,k)=>{
+    const b=document.createElement('button'); b.type='button'; b.className='hwc'; b.dataset.m=m;
+    b.setAttribute('aria-label','뒤집힌 카드 '+(k+1)+'번');
+    const front = m==='bonus'
+      ? '<span class="fr bonus"><img src="bonus.jpg" alt=""><span>보너스!</span></span>'
+      : '<span class="fr"><span class="ic">'+HW_ICON[HW[m][0]]+'</span><span>'+HW[m][1]+'</span></span>';
+    b.innerHTML='<span class="in"><span class="bk">'+hwBack+'</span>'+front+'</span>';
+    hwgrid.append(b);
+  });
+  hwSay('같은 그림 두 장을 찾아보세요! 카드를 눌러 뒤집어요. 보너스 카드도 숨어 있어요.');
+}
+hwgrid.addEventListener('click',e=>{
+  const c=e.target.closest('.hwc'); if(!c || hwLock || c.classList.contains('up')) return;
+  c.classList.add('up');
+  const m=c.dataset.m==='bonus'?'bonus':+c.dataset.m;
+  c.setAttribute('aria-label', m==='bonus'?'보너스 카드: 영상 속 할머니 사진':HW[m][1]);
+  if(!hwFirst){ hwFirst=c; return; }
+  hwTries++;
+  const a=hwFirst; hwFirst=null;
+  if(a.dataset.m===c.dataset.m){
+    a.classList.add('ok'); c.classList.add('ok'); a.disabled=c.disabled=true; hwFound++;
+    let line;
+    if(m==='bonus'){ a.classList.add('gold'); c.classList.add('gold'); hwsrc.textContent='';
+      line='보너스 카드! 영상 속 할머니가 응원하러 오셨어요. 어르신, 힘내세요!'; }
+    else { const [,name,tip,src]=HW[m]; hwsrc.textContent='방금 들은 안전 한마디의 근거: '+src; line=`${name}, 짝을 찾으셨어요! ${tip}`; }
+    if(hwFound===hwPairs) line+=` … 와, 모두 찾으셨어요! ${hwTries}번 만에 해내셨어요. 오늘 들으신 안전 한마디도 꼭 기억해 주세요.`;
+    hwSay(line);
+  } else {
+    hwLock=true;
+    hwmsg.textContent='아쉬워요. 다시 한번 찾아봐요!';
+    hwTimer=setTimeout(()=>{ [a,c].forEach(x=>{ x.classList.remove('up'); x.setAttribute('aria-label','뒤집힌 카드'); }); hwLock=false; }, 1300);
+  }
+});
+function openHwatu(btn){
+  hwOpener=btn||null;
+  if(typeof rOn!=='undefined' && rOn) closeRadio();
+  try{ speechSynthesis.cancel(); }catch(_){}
+  hwpanel.hidden=false; document.getElementById('hwclose').focus();
+  hwDeal(hwPairs-1);
+}
+function closeHwatu(){
+  if(hwpanel.hidden) return;
+  clearTimeout(hwTimer); try{ speechSynthesis.cancel(); }catch(_){}
+  hwpanel.hidden=true; if(hwOpener) hwOpener.focus();
+}
+document.getElementById('hwclose').onclick=closeHwatu;
+document.getElementById('hwnew').onclick=()=>hwDeal(7);
+document.getElementById('hweasy').onclick=()=>hwDeal(3);
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeHwatu(); });
+
+/* 📝 AI 간호 요약 (SBAR): 대화와 점검 결과를 간호사가 볼 수 있게 정리. 화면에만 보여 주고 소리로 읽지 않음 */
+function sbarLocal(){
+  const f=load('fesi',{}); const sum=a=>a.reduce((x,y)=>x+y,0);
+  const lines=[];
+  lines.push('S(상황): 낙상 예방 챗봇 낙지로 교육을 받음.');
+  const b=[];
+  if(lastCheck) b.push(`낙상 위험 점검 ${lastCheck.score}점/14점`+(lastCheck.score>=4?'(4점 이상)':''));
+  if(f.pre) b.push(`낙상 걱정 점수 교육 전 ${sum(f.pre)}점`+(f.post?` → 교육 후 ${sum(f.post)}점`:''));
+  lines.push('B(배경): '+(b.join(', ')||'점검 결과 없음 — 확인 필요'));
+  const a=lastCheck&&lastCheck.yes.length ? lastCheck.yes.map(k=>CHECK[k][0].replace(/\.$/,'')).join(' / ') : '점검에서 "예"라고 답한 항목 없음';
+  lines.push('A(평가): 어르신 응답 기준 — '+a);
+  const keys=lastCheck?[...new Set(lastCheck.yes.map(k=>CHECK[k][2]))]:[];
+  const r={fell:'낙상 이력 확인·낙상 예방 계획',aid:'보조기 위치·사용 확인',bal:'이동 시 보조·균형 평가',fear:'낙상 두려움 상담',leg:'근력 운동 계획',toilet:'야간 배뇨 계획(소변기·호출벨)',foot:'신발·발 감각 확인',med:'낙상 위험 약물 검토',mood:'우울감 선별·상담'};
+  lines.push('R(제안): '+(keys.length?keys.map(k=>r[k]).join(', '):'정기 낙상 위험 재평가'));
+  return lines.join('\n');
+}
+async function runSbar(){
+  bubble('me', LABEL.sbar);
+  const say0=()=>{ try{ speechSynthesis.cancel(); }catch(_){} };
+  const sample = aiOff ? null : await samplePromise;
+  const data = turns.slice(-30).map(t=>(t.role==='user'?'어르신: ':'낙지: ')+String(t.content).slice(0,300)).join('\n');
+  if(sample && turns.length){
+    const t=bubble('bot','요약하고 있어요…'); say0();
+    try{
+      const prompt=`아래는 요양병원 어르신과 낙상 예방 챗봇 "낙지"의 대화와 점검 결과다. 간호사가 볼 SBAR 요약을 한국어로 써라.
+규칙: 대화와 결과에 실제로 있는 내용만 쓴다. 추측하거나 진단하지 않는다. 없는 정보는 "확인 필요"라고 쓴다. 이름 등 개인정보는 쓰지 않는다.
+형식(10줄 이내): S(상황) / B(배경: 점검·걱정 점수 등) / A(평가: "어르신 말씀에 따르면"으로 낙상 위험 요인) / R(제안: 간호사가 확인할 것 2~4개)
+[구조화된 결과]
+${sbarLocal()}
+[대화]
+${data}`;
+      const {text}=await sample(prompt,{cache:false});
+      t.textContent=text.trim()+'\n\n(AI가 만든 요약이에요. 간호사가 꼭 확인한 뒤 써 주세요.)'; t.classList.add('sbar');
+      say0(); return;
+    }catch(_){ t.textContent='AI 요약이 안 돼서 기본 요약을 보여 드려요.'; }
+  }
+  const t2=bubble('bot', sbarLocal()+'\n\n(기본 요약이에요. AI가 연결되면 대화 내용까지 정리해요. 간호사가 꼭 확인해 주세요.)'); t2.classList.add('sbar'); say0();
+}
+
+function openVideo(btn){
+  if(rOn) closeRadio();
+  if(!VIDEO_URL) return;
+  vidOpener=btn; try{ speechSynthesis.cancel(); }catch(_){}
+  bubble('me', LABEL.video);
+  bubble('bot', VIDEO_INTRO);
+  vidpanel.hidden=false; try{ speechSynthesis.cancel(); }catch(_){}
+  vidMenu();
+}
+function closeVideo(){ vidReq++; vid.pause(); vidplay.hidden=true; vidload.hidden=true; vidpanel.hidden=true; if(vidOpener) vidOpener.focus(); }
+document.getElementById('vidclose').onclick=closeVideo;
+vid.addEventListener('play',()=>{ try{ speechSynthesis.cancel(); }catch(_){} });
+
+function onPick(e){
+  const c=e.target.closest('[data-k]'); if(!c||busy) return;
+  if(c.classList.contains('tile')) q.blur();
+  const k=c.dataset.k;
+  if(k==='check') runCheck();
+  else if(k==='mission') runMission();
+  else if(k==='score') runScore();
+  else if(k==='quiz') runQuiz();
+  else if(k==='up') runUp();
+  else if(k==='meds') runMeds(c);
+  else if(k==='promise') runPromise(false);
+  else if(k==='video') openVideo(c);
+  else if(k==='sbar') runSbar();
+  else fixed(k);
+}
+function openMenu(id){ try{ speechSynthesis.cancel(); }catch(_){} const el=document.getElementById(id); el.hidden=false; el.scrollTop=0; const c=el.querySelector('.medclose'); c&&c.focus(); }
+function closeMenu(id){ document.getElementById(id).hidden=true; }
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>closeMenu(b.dataset.close));
+document.getElementById('startbtn').onclick=()=>{
+  document.getElementById('startpanel').hidden=true;
+  userActed=true;
+  say(HELLO, true);
+};
+document.getElementById('tiles').addEventListener('click',e=>{
+  const c=e.target.closest('[data-k]'); if(!c) return;
+  if(c.dataset.k==='prev'){ openMenu('prevpanel'); return; }
+  if(c.dataset.k==='sos'){ if(rOn) closeRadio(); openMenu('sosmenu'); return; }
+  if(c.dataset.k==='fun'){ openMenu('funpanel'); return; }
+  if(c.dataset.k==='learn'){ openMenu('learnpanel'); return; }
+  if(c.dataset.k==='video' && !VIDEO_URL){ bubble('bot','영상 교육은 곧 준비될 거예요. 그동안 궁금한 건 언제든 물어보세요.'); return; }
+  onPick(e);
+});
+['prevpanel','sosmenu','testpanel'].forEach(id=>document.getElementById(id).addEventListener('click',e=>{
+  const c=e.target.closest('.mbtn[data-k]'); if(!c) return;
+  closeMenu(id); onPick(e);
+}));
+document.getElementById('learnpanel').addEventListener('click',e=>{
+  const c=e.target.closest('.mbtn[data-k]'); if(!c) return;
+  closeMenu('learnpanel');
+  if(c.dataset.k==='prev') openMenu('prevpanel');
+  else if(c.dataset.k==='video') openVideo(document.querySelector('.b-learn'));
+  else onPick(e);
+});
+document.getElementById('funpanel').addEventListener('click',e=>{
+  const c=e.target.closest('.mbtn[data-k]'); if(!c) return;
+  closeMenu('funpanel'); if(c.dataset.k==='radio') openRadio(c); else openHwatu(c);
+});
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ ['prevpanel','sosmenu','funpanel','testpanel','learnpanel'].forEach(closeMenu); } });
+document.getElementById('chips').addEventListener('click',onPick);
+document.getElementById('chips2').addEventListener('click',onPick);
+const histBtn=document.getElementById('history');
+histBtn.onclick=()=>{ showAll=!showAll; histBtn.textContent=showAll?'지금 대화만 보기':'지난 대화 모두 보기'; scrollEnd(); };
+document.getElementById('reset').onclick=()=>{ try{speechSynthesis.cancel();}catch(_){} document.getElementById('startpanel').hidden=false; log.textContent=''; turns=[]; bubble('bot',HELLO); turns.push({role:'user',content:'(어르신이 챗봇을 열었다)'},{role:'assistant',content:HELLO}); document.getElementById('nurse').open=false; };
+/* 🎤 말로 물어보기: 가능하면 바로 받아쓰기, 안 되면 키보드 마이크 안내 */
+const micbar=document.getElementById('micbar'), miclabel=document.getElementById('miclabel'), michint=document.getElementById('michint');
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let srBlocked = !SR, rec = null, listening = false;
+function micIdle(){ listening=false; micbar.classList.remove('listening'); miclabel.textContent='눌러서 말로 물어보기'; }
+function keyboardWay(){
+  srBlocked = true;
+  michint.hidden = false;
+  q.focus();                                   /* 키보드 열기 */
+  scrollEnd();
+}
+micbar.onclick=()=>{
+  if(rOn) closeRadio();
+  try{ speechSynthesis.cancel(); }catch(_){}
+  if(listening && rec){ try{ rec.stop(); }catch(_){} return; }
+  if(srBlocked){ keyboardWay(); return; }
+  try{
+    rec = new SR(); rec.lang='ko-KR'; rec.interimResults=true; rec.continuous=false;
+    let gotText=false;
+    rec.onstart=()=>{ listening=true; micbar.classList.add('listening'); miclabel.textContent='듣고 있어요… 말씀하세요'; michint.hidden=true; };
+    rec.onresult=(e)=>{ let t=''; for(const r of e.results) t+=r[0].transcript; q.value=t; gotText=!!t.trim(); };
+    rec.onerror=(e)=>{ micIdle(); if(['not-allowed','service-not-allowed','audio-capture','network'].includes(e.error)) keyboardWay(); };
+    rec.onend=()=>{ const was=listening; micIdle(); if(was && gotText) doSend(); };
+    rec.start();
+    setTimeout(()=>{ if(!listening && !srBlocked){ try{ rec.abort(); }catch(_){} micIdle(); keyboardWay(); } }, 1500); /* 반응이 없으면 키보드 방식으로 */
+  }catch(_){ micIdle(); keyboardWay(); }
+};
+q.addEventListener('blur',()=>{ setTimeout(()=>{ if(document.activeElement!==q) michint.hidden=true; }, 300); });
+
+/* 음성 입력(키보드 마이크)으로 말이 끝나면 자동으로 보내기 */
+const AUTO_MS = 2500;                 /* 말이 멈춘 뒤 2.5초 */
+let autoOn = true, autoTimer = null;
+try{ autoOn = localStorage.getItem('autosend')!=='0'; }catch(_){}
+const sendBtn=document.getElementById('send'), sendLabel=document.getElementById('sendlabel');
+document.documentElement.style.setProperty('--auto-ms', AUTO_MS+'ms');
+function cancelAuto(){ clearTimeout(autoTimer); autoTimer=null; sendBtn.classList.remove('counting'); sendLabel.textContent='보내기'; }
+function doSend(){ cancelAuto(); const v=q.value; if(!v.trim()) return; if(busy){ armAuto(); return; } q.value=''; ask(v); }
+function armAuto(){
+  cancelAuto();
+  if(!autoOn || !q.value.trim()) return;
+  void sendBtn.offsetWidth;            /* 채움 효과 처음부터 다시 */
+  sendBtn.classList.add('counting'); sendLabel.textContent='곧 보내요';
+  autoTimer=setTimeout(doSend, AUTO_MS);
+}
+q.addEventListener('input', armAuto);
+q.addEventListener('compositionend', armAuto);
+document.getElementById('f').addEventListener('submit',e=>{ e.preventDefault(); doSend(); });
+const autoBtn=document.getElementById('autosend');
+function applyAuto(){ autoBtn.textContent='🎤 말 끝나면 자동 보내기: '+(autoOn?'켜짐':'꺼짐'); autoBtn.setAttribute('aria-pressed',autoOn?'true':'false'); }
+applyAuto();
+autoBtn.onclick=()=>{ autoOn=!autoOn; applyAuto(); try{ localStorage.setItem('autosend',autoOn?'1':'0'); }catch(_){} if(!autoOn) cancelAuto(); };
+
+/* 기기별 사용 안내 + 소리 시험 (자동 감지가 놓쳐도 직접 확인) */
+const DEVGUIDE = `기기별 사용 안내예요.
+[아이폰·아이패드]
+• 옆면 무음 스위치를 끄고 음량을 최대로 올려 주세요.
+• 말로 묻기: 설정 → 일반 → 키보드 → 받아쓰기 켜기. 키보드의 마이크를 누르고 말하면 돼요.
+[갤럭시]
+• 목소리가 안 나오면 링크를 복사해서 크롬(Chrome) 브라우저로 열어 주세요.
+• 그래도 안 나오면 설정 → 일반 관리 → 글자 읽어주기에서 기본 엔진과 한국어 음성을 확인해 주세요. (기종마다 메뉴 이름이 조금 달라요)
+• 말로 묻기: 삼성 키보드 툴바의 마이크, 또는 Gboard(구글 키보드)의 마이크를 쓰세요.
+[공통]
+• 말이 끝나고 2.5초 뒤 자동으로 보내져요.
+• 빨간 도와주세요 버튼은 소리만 내요. 호출벨도 함께 눌러 주세요.`;
+function showGuide(){ bubble('bot', DEVGUIDE); }
+document.getElementById('devguide').onclick=()=>{ document.getElementById('nurse').open=false; showGuide(); };
+document.getElementById('soundtest').onclick=()=>{
+  document.getElementById('nurse').open=false;
+  const t=bubble('bot','소리 시험이에요. 이 목소리가 들리시나요?');
+  say('소리 시험이에요. 이 목소리가 들리시나요?', true);
+  const row=document.createElement('div'); row.className='yn';
+  [['들려요',true],['안 들려요',false]].forEach(([lab,ok])=>{
+    const b=document.createElement('button'); b.type='button'; b.className='chip'; b.textContent=lab;
+    b.onclick=()=>{ row.remove(); bubble('me',lab);
+      if(ok){ markTtsOk(); bubble('bot','좋아요! 이 기기에서는 목소리로 읽어 드릴 수 있어요.'); }
+      else { const n=document.getElementById('ttsnote'); if(n) n.hidden=false; showGuide(); } };
+    row.append(b);
+  });
+  t.parentElement.append(row); scrollEnd();
+};
+const voiceBtn=document.getElementById('voice');
+function applyVoice(){ voiceBtn.textContent = voiceOn?'🔊 소리 켜짐':'🔇 소리 꺼짐'; voiceBtn.setAttribute('aria-pressed', voiceOn?'true':'false'); }
+if(!TTS) voiceBtn.hidden = true; else applyVoice();
+voiceBtn.onclick=()=>{
+  voiceOn=!voiceOn; applyVoice();
+  try{ localStorage.setItem('voice', voiceOn?'1':'0'); }catch(_){}
+  if(voiceOn) say('소리로 읽어 드릴게요.'); else { try{ speechSynthesis.cancel(); }catch(_){} }
+};
+const sizeBtn=document.getElementById('size');
+function applySize(on){ document.body.classList.toggle('big',on); sizeBtn.textContent=on?'글씨 원래대로':'글씨 더 크게'; }
+try{ applySize(localStorage.getItem('big')==='1'); }catch(_){}
+sizeBtn.onclick=()=>{ const on=!document.body.classList.contains('big'); applySize(on); try{localStorage.setItem('big',on?'1':'0');}catch(_){} };
+</script>
+<script>
+/* 앱(PWA): 한 번 열면 인터넷 없이도 열리도록 저장 */
+if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }
+</script>
+</body>
+</html>
